@@ -1,0 +1,84 @@
+# ===============================
+# Core Backend
+# ===============================
+fastapi==0.110.0
+uvicorn[standard]==0.29.0
+
+# ===============================
+# Configuration & Environment
+# ===============================
+python-dotenv==1.0.1
+pydantic-settings==2.2.1
+
+# ===============================
+# LangChain Core
+# ===============================
+langchain==0.1.16
+langchain-community==0.0.34
+langchain-openai==0.1.6
+langchain-huggingface==0.0.6
+langchain-vdms==0.1.3
+
+# ===============================
+# Vector Database (Intel VDMS)
+# ===============================
+vdms==0.0.21
+
+# ===============================
+# Embeddings / ML
+# ===============================
+sentence-transformers==2.6.1
+torch>=2.1.0
+
+# ===============================
+# Document Loading
+# ===============================
+pypdf==4.2.0
+
+# ===============================
+# Optional (Production Quality)
+# ===============================
+python-multipart==0.0.9
+loguru==0.7.2# ===============================
+# Core Backend
+# ===============================
+fastapi==0.110.0
+uvicorn[standard]==0.29.0
+
+# ===============================
+# Configuration & Environment
+# ===============================
+python-dotenv==1.0.1
+pydantic-settings==2.2.1
+
+# ===============================
+# LangChain Core
+# ===============================
+langchain==0.1.16
+langchain-community==0.0.34
+langchain-openai==0.1.6
+langchain-huggingface==0.0.6
+langchain-vdms==0.1.3
+
+# ===============================
+# Vector Database (Intel VDMS)
+# ===============================
+vdms==0.0.21
+
+# ===============================
+# Embeddings / ML
+# ===============================
+sentence-transformers==2.6.1
+torch>=2.1.0
+
+# ===============================
+# Document Loading
+# ===============================
+pypdf==4.2.0
+
+# ===============================
+# Optional (Production Quality)
+# ===============================
+python-multipart==0.0.9
+loguru==0.7.2
+
