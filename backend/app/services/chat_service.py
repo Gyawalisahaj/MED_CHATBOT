@@ -1,5 +1,7 @@
 from langchain_openai import ChatOpenAI
 from langchain.chains import ConversationalRetrievalChain
+from app.rag.qa_cache import get_cached_answer, save_to_cache
+
 
 from app.core.config import settings
 from app.core.prompts import MEDICAL_PROMPT, CONDENSE_PROMPT
@@ -29,8 +31,21 @@ def build_rag_chain():
 
 
 async def process_chat_message(request: ChatRequest) -> ChatResponse:
-    logger.info("Processing medical query")
+    logger.info("Received medical query")
 
+    # 1️⃣ Normalize question
+    normalized_question = request.message.strip().lower()
+
+    # 2️⃣ Check cache FIRST
+    cached_answer = get_cached_answer(normalized_question)
+    if cached_answer:
+        logger.info("Returning cached response")
+        return ChatResponse(
+            answer=cached_answer,
+            sources=["Cached Response"],
+        )
+
+    # 3️⃣ Call RAG + LLM
     chain = build_rag_chain()
 
     chat_history = [
@@ -44,12 +59,16 @@ async def process_chat_message(request: ChatRequest) -> ChatResponse:
         "chat_history": chat_history,
     })
 
+    answer = result["answer"]
     sources = list({
         doc.metadata.get("source", "Unknown")
         for doc in result.get("source_documents", [])
     })
 
+    # 4️⃣ Save response to cache
+    save_to_cache(normalized_question, answer)
+
     return ChatResponse(
-        answer=result["answer"],
+        answer=answer,
         sources=sources,
     )
