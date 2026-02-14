@@ -4,3 +4,6 @@ __pycache__/
 venv/
 .DS_Store
 data/raw_docs/*.pdf
+.local.env
+.local.env
+.local.env

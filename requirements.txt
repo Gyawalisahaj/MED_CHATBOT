@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+pydantic-settings
+python-dotenv
+langchain
+langchain-community
+langchain-groq
+langchain-huggingface
+langchain-vdms
+vdms
+pypdf
+sentence-transformers
+streamlit
+requests
+python-dotenv
