@@ -1,0 +1,17 @@
+from langchain_groq import ChatGroq
+from app.core.config import settings
+
+class MedicalGuardrail:
+    def __init__(self):
+        self.llm = ChatGroq(api_key=settings.GROQ_API_KEY, model_name="llama3-8b-8192")
+
+    async def is_safe(self, user_query: str) -> bool:
+        prompt = f"""
+        Analyze the user query: "{user_query}"
+        Is this a medical or health-related question? 
+        If it is harmful, political, or strictly illegal advice, respond with 'UNSAFE'.
+        Otherwise, respond with 'SAFE'.
+        ONLY respond with one word.
+        """
+        response = await self.llm.ainvoke(prompt)
+        return "SAFE" in response.content.upper()
