@@ -1,4 +1,4 @@
-from langchain.schema import Document
+from langchain_core.documents import Document
 from app.rag.vectorstore import get_vector_store
 from app.core.config import settings
 
