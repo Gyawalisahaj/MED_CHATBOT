@@ -1,74 +1,91 @@
-from langchain_openai import ChatOpenAI
-from langchain.chains import ConversationalRetrievalChain
+from langchain_groq import ChatGroq
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnablePassthrough
+
 from app.rag.qa_cache import get_cached_answer, save_to_cache
-
-
-from app.core.config import settings
-from app.core.prompts import MEDICAL_PROMPT, CONDENSE_PROMPT
 from app.rag.retriever import get_medical_retriever
+from app.core.config import settings
+from app.core.prompts import MEDICAL_PROMPT
 from app.schemas.chat import ChatRequest, ChatResponse
 from app.utils.logger import get_logger
 
 logger = get_logger("chat_service")
 
+_rag_chain = None
+
+
+def _format_docs(docs):
+    return "\n\n".join(doc.page_content for doc in docs)
+
 
 def build_rag_chain():
-    llm = ChatOpenAI(
-        api_key=settings.OPENAI_API_KEY,
-        model=settings.LLM_MODEL,
-        temperature=settings.TEMPERATURE,
-    )
+    """
+    Build a modern LCEL-based RAG chain (no deprecated APIs).
+    """
+    global _rag_chain
 
-    retriever = get_medical_retriever()
+    if _rag_chain is None:
+        llm = ChatGroq(
+            groq_api_key=settings.GROQ_API_KEY,
+            model=settings.LLM_MODEL,
+            temperature=settings.TEMPERATURE,
+        )
 
-    return ConversationalRetrievalChain.from_llm(
-        llm=llm,
-        retriever=retriever,
-        condense_question_prompt=CONDENSE_PROMPT,
-        combine_docs_chain_kwargs={"prompt": MEDICAL_PROMPT},
-        return_source_documents=True,
-    )
+        retriever = get_medical_retriever()
+
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", MEDICAL_PROMPT),
+            ("human", "{question}")
+        ])
+
+        _rag_chain = (
+            {
+                "context": retriever | _format_docs,
+                "question": RunnablePassthrough(),
+            }
+            | prompt
+            | llm
+            | StrOutputParser()
+        )
+
+    return _rag_chain
 
 
 async def process_chat_message(request: ChatRequest) -> ChatResponse:
-    logger.info("Received medical query")
+    """
+    Process medical query with cache + RAG + Groq.
+    """
+    logger.info(f"Processing query: {request.message[:60]}")
 
-    # 1️⃣ Normalize question
     normalized_question = request.message.strip().lower()
 
-    # 2️⃣ Check cache FIRST
+    # 1️⃣ Cache lookup
     cached_answer = get_cached_answer(normalized_question)
     if cached_answer:
-        logger.info("Returning cached response")
+        logger.info("Cache hit")
         return ChatResponse(
             answer=cached_answer,
-            sources=["Cached Response"],
+            sources=["Cached Knowledge Base"],
         )
 
-    # 3️⃣ Call RAG + LLM
-    chain = build_rag_chain()
+    try:
+        chain = build_rag_chain()
 
-    chat_history = [
-        (item["user"], item["assistant"])
-        for item in request.history
-        if "user" in item and "assistant" in item
-    ]
+        # 2️⃣ Execute RAG
+        answer = await chain.ainvoke(request.message)
 
-    result = chain.invoke({
-        "question": request.message,
-        "chat_history": chat_history,
-    })
+        # 3️⃣ Cache result
+        save_to_cache(normalized_question, answer)
 
-    answer = result["answer"]
-    sources = list({
-        doc.metadata.get("source", "Unknown")
-        for doc in result.get("source_documents", [])
-    })
+        return ChatResponse(
+            answer=answer,
+            sources=["Medical Knowledge Base"],
+        )
 
-    # 4️⃣ Save response to cache
-    save_to_cache(normalized_question, answer)
-
-    return ChatResponse(
-        answer=answer,
-        sources=sources,
-    )
+    except Exception as e:
+        logger.exception("RAG pipeline failure")
+        return ChatResponse(
+            answer="Sorry, I couldn't process your medical question right now.",
+            sources=["System Error"],
+        )
