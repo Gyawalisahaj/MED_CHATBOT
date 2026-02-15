@@ -1,6 +1,6 @@
 from typing import List
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.schema import Document
+from langchain_core.documents import Document
 
 
 def split_medical_documents(documents: List[Document]) -> List[Document]:
