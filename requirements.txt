@@ -1,15 +1,22 @@
+# Web Framework & Server
 fastapi
 uvicorn
 pydantic-settings
 python-dotenv
+python-multipart
+
+# LangChain Core & Integrations
 langchain
 langchain-community
 langchain-groq
 langchain-huggingface
 langchain-vdms
+
+# Vector Database & Processing
 vdms
 pypdf
 sentence-transformers
+
+# Frontend & Communication
 streamlit
 requests
-python-dotenv
