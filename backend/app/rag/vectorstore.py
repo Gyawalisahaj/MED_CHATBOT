@@ -1,4 +1,4 @@
-from langchain_vdms import VDMS, VDMS_Client
+from langchain_vdms import VDMS
 from app.rag.embeddings import get_embeddings_model
 from app.core.config import settings
 
