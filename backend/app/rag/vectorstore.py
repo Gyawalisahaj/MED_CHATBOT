@@ -1,9 +1,8 @@
-from langchain_vdms import VDMS
+from langchain_community.vectorstores.vdms import VDMS, VDMS_Client # Added VDMS_Client
 from app.rag.embeddings import get_embeddings_model
 from app.core.config import settings
 
 _vectorstore = None
-
 
 def get_vector_store() -> VDMS:
     """
@@ -14,8 +13,9 @@ def get_vector_store() -> VDMS:
     if _vectorstore is None:
         embeddings = get_embeddings_model()
 
+        # Hardcoding '127.0.0.1' here ensures we bypass any localhost/IPv6 issues
         client = VDMS_Client(
-            host=settings.VDMS_HOST,
+            host="127.0.0.1", 
             port=settings.VDMS_PORT
         )
 
