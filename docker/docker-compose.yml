@@ -1,27 +1,38 @@
-version: "3.9"
-
 services:
   backend:
     build:
       context: ..
-      dockerfile: docker/dockerfile.backend
-    env_file:
-      - ../backend/.env
+      dockerfile: docker/Dockerfile.backend
+    container_name: medical_rag_backend
     ports:
       - "8000:8000"
-    depends_on:
-      - redis
+    environment:
+      - PYTHONUNBUFFERED=1
+      - VECTOR_DB_TYPE=faiss
+    volumes:
+      - ../Document:/app/Document
+      - ../backend:/app/app
+      - ./vector_store:/app/vector_store
+    networks:
+      - medical_network
 
   frontend:
     build:
       context: ..
-      dockerfile: docker/dockerfile.frontend
+      dockerfile: docker/Dockerfile.frontend
+    container_name: medical_rag_frontend
     ports:
       - "8501:8501"
     depends_on:
       - backend
+    environment:
+      - BACKEND_URL=http://backend:8000
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ../frontend:/app
+    networks:
+      - medical_network
 
-  redis:
-    image: redis:7
-    ports:
-      - "6379:6379"
+networks:
+  medical_network:
+    driver: bridge
