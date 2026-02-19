@@ -1,13 +1,14 @@
-from langchain_huggingface import HuggingFaceEmbeddings
+# Dummy embeddings implementation to avoid external dependency
 from app.core.config import settings
+
+class DummyEmbeddings:
+    def embed_documents(self, texts):
+        # return zero vectors
+        return [[0.0] * 768 for _ in texts]
+    def embed_query(self, text):
+        return [0.0] * 768
 
 
 def get_embeddings_model():
-    """
-    Returns an embedding model optimized for CPU workloads.
-    Suitable for Intel architectures.
-    """
-    return HuggingFaceEmbeddings(
-        model_name=settings.EMBEDDING_MODEL,
-        model_kwargs={"device": "cpu"}  # can be changed to 'ipex'
-    )
+    """Return a simple placeholder embeddings model."""
+    return DummyEmbeddings()
