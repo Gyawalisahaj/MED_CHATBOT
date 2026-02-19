@@ -1,4 +1,4 @@
-from langchain_core.prompts import PromptTemplate
+# prompt definitions are plain strings, no third-party template class
 
 # ================================
 # MEDICAL RAG ANSWER PROMPT
@@ -51,10 +51,10 @@ USER QUESTION:
 MEDICAL ANSWER:
 """
 
-MEDICAL_PROMPT = PromptTemplate(
-    template=MEDICAL_RAG_PROMPT_TEMPLATE,
-    input_variables=["context", "question"],
-)
+# When the project used LangChain the prompts were wrapped in
+# PromptTemplate instances. For the simplified backend we just keep them as
+# raw strings and perform any necessary formatting manually if needed.
+MEDICAL_PROMPT = MEDICAL_RAG_PROMPT_TEMPLATE
 
 # ================================
 # QUESTION CONDENSATION PROMPT
@@ -78,7 +78,5 @@ FOLLOW-UP QUESTION:
 STANDALONE MEDICAL QUESTION:
 """
 
-CONDENSE_PROMPT = PromptTemplate(
-    template=CONDENSE_QUESTION_PROMPT_TEMPLATE,
-    input_variables=["chat_history", "question"],
-)
+# the condensation prompt is not currently used; export raw string
+CONDENSE_PROMPT = CONDENSE_QUESTION_PROMPT_TEMPLATE
