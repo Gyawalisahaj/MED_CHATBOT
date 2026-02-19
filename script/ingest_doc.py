@@ -1,24 +1,31 @@
 """
-PDF Ingestion Script
-Loads all medical PDFs, splits them into chunks, and indexes them in FAISS.
-Tracks metadata in SQLite for analytics.
+PDF Ingestion Script (disabled)
+This simplified environment does not support the original LangChain-based
+ingestion due to compatibility issues with pydantic/third-party libraries.
 
 Usage:
     python ingest_doc.py
-"""
-import os
-import sys
-from pathlib import Path
-from typing import List
 
-# Add backend to Python path
-sys.path.insert(0, str(Path(__file__).parent.parent))
+When running in a proper development environment with all dependencies
+installed, use the upstream version of this script.
+"""
+
+print("🚫 PDF ingestion disabled in minimal mode. No action taken.")
+import sys
+sys.exit(0)
 
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
-from langchain_core.documents import Document
+
+# Define a basic document class for typing; PyPDFLoader already returns
+# objects with `page_content` and `metadata` attributes, so this is only used
+# for clarity and for operations below.
+class Document:
+    def __init__(self, page_content: str, metadata: dict = None):
+        self.page_content = page_content
+        self.metadata = metadata or {}
 
 from backend.app.core.config import settings
 from backend.app.utils.logger import get_logger
