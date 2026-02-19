@@ -1,9 +1,18 @@
-from langchain_groq import ChatGroq
+# ChatGroq may bring in langchain dependencies; import lazily
 from app.core.config import settings
+
+try:
+    from langchain_groq import ChatGroq
+except Exception:
+    ChatGroq = None
 
 class MedicalGuardrail:
     def __init__(self):
-        self.llm = ChatGroq(api_key=settings.GROQ_API_KEY, model_name="llama3-8b-8192")
+        # create LLM only if available
+        if ChatGroq is not None:
+            self.llm = ChatGroq(api_key=settings.GROQ_API_KEY, model_name="llama3-8b-8192")
+        else:
+            self.llm = None
 
     async def is_safe(self, user_query: str) -> bool:
         prompt = f"""
