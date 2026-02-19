@@ -321,9 +321,10 @@ with chat_container:
 # ============================================================================
 
 # Query input
+# The first positional argument of chat_input serves as the placeholder in
+# newer Streamlit versions, so we only supply it and avoid keyword conflicts.
 user_input = st.chat_input(
-    "Type your medical question...",
-    placeholder="e.g., What are the symptoms of diabetes?"
+    placeholder="Type your medical question... (e.g., What are the symptoms of diabetes?)"
 )
 
 if user_input:
@@ -452,7 +453,13 @@ st.markdown("---")
 with st.sidebar:
     st.header("🎙️ Voice Control")
     st.info("Record your question if you prefer not to type.")
-    audio_data = st.audio_input("Microphone")
+    # audio_input may not be available in this Streamlit version
+    audio_data = None
+    if hasattr(st, "audio_input"):
+        try:
+            audio_data = st.audio_input("Microphone")
+        except Exception:
+            audio_data = None
     
     # Process Voice Input if new audio is detected
     voice_query = None
@@ -461,7 +468,7 @@ with st.sidebar:
         with st.spinner("🎙️ Transcribing voice..."):
             try:
                 voice_query = client.transcribe_audio(audio_data.getvalue())
-            except Exception as e:
+            except Exception:
                 st.error("Transcription failed.")
 
 # --- MAIN: Chat Display ---
