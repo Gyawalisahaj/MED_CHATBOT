@@ -39,7 +39,7 @@ async def chat_endpoint(request: ChatRequest):
 
 
 @router.get("/history/{session_id}", response_model=List[ChatHistoryItem])
-async def get_chat_history(session_id: str = Query(..., description="Session ID")):
+async def get_chat_history(session_id: str):
     """
     Retrieve chat history for a specific session.
     
@@ -74,7 +74,7 @@ async def get_chat_history(session_id: str = Query(..., description="Session ID"
 
 
 @router.delete("/history/{session_id}")
-async def clear_chat_history(session_id: str = Query(..., description="Session ID")):
+async def clear_chat_history(session_id: str):
     """
     Clear chat history for a specific session.
     
