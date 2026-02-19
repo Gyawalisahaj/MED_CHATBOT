@@ -1,6 +1,12 @@
-/* Professional Medical Theme */
+/* Dark/black background theme */
 .stApp {
-    background-color: #f0f2f6;
+    background-color: #000000;
+    color: #ffffff;
+}
+
+/* ensure general text is visible on dark bg */
+body, .stText, .stMarkdown, .stButton>button {
+    color: #ffffff !important;
 }
 
 /* Chat Bubble Customization */
