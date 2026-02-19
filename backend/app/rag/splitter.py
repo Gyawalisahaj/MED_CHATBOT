@@ -1,18 +1,19 @@
 from typing import List
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_core.documents import Document
+# Simple document type for splitting operations (only attributes needed are
+# `page_content` and `metadata`).
+class Document:
+    def __init__(self, page_content: str, metadata: dict = None):
+        self.page_content = page_content
+        self.metadata = metadata or {}
+
+# Dummy splitter that returns documents unchanged.  The original
+# implementation used RecursiveCharacterTextSplitter from langchain_text_splitters
+# which pulled in incompatible dependencies.
 
 
 def split_medical_documents(documents: List[Document]) -> List[Document]:
     """
-    Split medical documents into overlapping chunks
-    optimized for clinical and educational text.
+    Dummy splitter; returns documents unchanged.
     """
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=700,
-        chunk_overlap=120,
-        separators=["\n\n", "\n", ".", " ", ""]
-    )
-
-    return splitter.split_documents(documents)
+    return documents
 
