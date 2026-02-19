@@ -1,6 +1,4 @@
-import os
-from langchain_community.vectorstores import FAISS
-from app.rag.embeddings import get_embeddings_model
+# vectorstore stub - external dependencies removed
 from app.core.config import settings
 
 _vectorstore = None
