@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     
     # ==================== EMBEDDING MODEL ====================
     EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"
-    EMBEDDING_DEVICE: str = "cpu"  # Can be 'cpu' or 'cuda'
+    EMBEDDING_DEVICE: str = "cuda"  # Can be 'cpu' or 'cuda'
     
     # ==================== RAG PARAMETERS ====================
     TOP_K: int = 7           # Number of documents to retrieve
