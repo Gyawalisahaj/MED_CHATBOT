@@ -1,33 +1,86 @@
 """
-PDF Ingestion Script (disabled)
-This simplified environment does not support the original LangChain-based
-ingestion due to compatibility issues with pydantic/third-party libraries.
-
-Usage:
-    python ingest_doc.py
-
-When running in a proper development environment with all dependencies
-installed, use the upstream version of this script.
+PDF Ingestion Script - Simple implementation
+Loads PDFs and creates vector store for RAG
 """
 
-print("🚫 PDF ingestion disabled in minimal mode. No action taken.")
+import os
 import sys
-sys.exit(0)
+from pathlib import Path
 
-from langchain_community.document_loaders import PyPDFLoader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_community.vectorstores import FAISS
+# Add backend to path
+backend_path = Path(__file__).parent.parent / "backend"
+sys.path.insert(0, str(backend_path))
 
-# Define a basic document class for typing; PyPDFLoader already returns
-# objects with `page_content` and `metadata` attributes, so this is only used
-# for clarity and for operations below.
-class Document:
-    def __init__(self, page_content: str, metadata: dict = None):
-        self.page_content = page_content
-        self.metadata = metadata or {}
+from app.rag.vectorstore import get_vector_store, SimpleDocument
+from app.rag.embeddings import get_embeddings_model
+from app.core.config import settings
 
-from backend.app.core.config import settings
+def load_pdf_documents(pdf_folder: str) -> list:
+    """Load documents from PDF files"""
+    documents = []
+
+    try:
+        from pypdf import PdfReader
+    except ImportError:
+        print("pypdf not installed. Install with: pip install pypdf")
+        return documents
+
+    pdf_path = Path(pdf_folder)
+    if not pdf_path.exists():
+        print(f"PDF folder not found: {pdf_folder}")
+        return documents
+
+    for pdf_file in pdf_path.glob("*.pdf"):
+        print(f"Processing {pdf_file.name}...")
+        try:
+            reader = PdfReader(str(pdf_file))
+            for page_num, page in enumerate(reader.pages):
+                text = page.extract_text()
+                if text.strip():  # Only add non-empty pages
+                    doc = SimpleDocument(
+                        page_content=text,
+                        metadata={
+                            "source": pdf_file.name,
+                            "page": page_num + 1,
+                            "file_path": str(pdf_file)
+                        }
+                    )
+                    documents.append(doc)
+            print(f"  Loaded {len(reader.pages)} pages from {pdf_file.name}")
+        except Exception as e:
+            print(f"  Error processing {pdf_file.name}: {e}")
+
+    return documents
+
+def main():
+    print("🩺 Medical RAG Document Ingestion")
+    print("=" * 40)
+
+    # Get vector store
+    vectorstore = get_vector_store()
+    embeddings_model = get_embeddings_model()
+
+    # Load documents
+    pdf_folder = settings.PDF_FOLDER or "./Document"
+    print(f"Loading PDFs from: {pdf_folder}")
+
+    documents = load_pdf_documents(pdf_folder)
+
+    if not documents:
+        print("❌ No documents loaded. Check PDF folder and pypdf installation.")
+        return
+
+    print(f"📄 Loaded {len(documents)} document chunks")
+
+    # Add to vector store
+    print("🔄 Adding documents to vector store...")
+    vectorstore.add_documents(documents)
+
+    print("✅ Ingestion complete!")
+    print(f"📊 Total documents in store: {len(vectorstore.documents)}")
+
+if __name__ == "__main__":
+    main()
 from backend.app.utils.logger import get_logger
 from backend.app.db.session import SessionLocal
 from backend.app.models.history import DocumentMetadata
