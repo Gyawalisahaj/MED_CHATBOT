@@ -370,10 +370,10 @@ if user_input:
                             unsafe_allow_html=True
                         )
             
-            # Add to history
+            # Add to history (standardized format)
             st.session_state.chat_history.append({
-                "message": user_input,
-                "response": answer,
+                "user": user_input,
+                "assistant": answer,
                 "sources": sources,
                 "timestamp": datetime.now().isoformat()
             })
