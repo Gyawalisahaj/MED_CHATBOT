@@ -86,8 +86,35 @@ async def process_chat_message(request: ChatRequest) -> ChatResponse:
     # This avoids pulling in LangChain dependencies which are incompatible with
     # the installed pydantic version. The rest of the system (cache/database)
     # continues to work normally.
-    answer = "This is a placeholder response. The RAG engine is disabled."
-    sources: List[str] = []
+
+    # 2️⃣ VECTOR RETRIEVAL - Get relevant medical documents
+    try:
+        from app.rag.vectorstore import get_vector_store
+        from app.rag.chain import get_rag_chain
+
+        vectorstore = get_vector_store()
+        rag_chain = get_rag_chain()
+
+        # Retrieve relevant documents
+        docs = vectorstore.similarity_search(request.message, k=settings.TOP_K)
+        logger.info(f"Retrieved {len(docs)} relevant documents")
+
+        # Extract sources
+        sources = []
+        for doc in docs:
+            if hasattr(doc, 'metadata') and doc.metadata:
+                source = doc.metadata.get('source', 'Unknown')
+                page = doc.metadata.get('page', 'N/A')
+                sources.append(f"{source} (Page {page})")
+
+        # 3️⃣ LLM PROCESSING - Generate answer with context
+        answer = rag_chain(request.message, docs)
+        logger.info("✅ RAG pipeline completed successfully")
+
+    except Exception as e:
+        logger.error(f"RAG pipeline failed: {str(e)}. Using fallback response.")
+        answer = f"I apologize, but I'm currently unable to access the medical knowledge base. Error: {str(e)}. Please try again later or contact support."
+        sources = ["Error: Knowledge base unavailable"]
 
     # persist to cache and history
     save_to_cache(normalized_question, answer)
