@@ -1,7 +1,7 @@
 """
 Chat Service: Core RAG pipeline with caching, source tracking, and medical guardrails.
 """
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 # The original implementation relied heavily on LangChain core and Groq
 # libraries which depend on pydantic v1. That conflicts with the project’s
@@ -18,7 +18,7 @@ except Exception:
 
 # Define a very small document-like object for use by the vector store cache.
 class SimpleDocument:
-    def __init__(self, page_content: str, metadata: Dict[str, Any] = None):
+    def __init__(self, page_content: str, metadata: Optional[Dict[str, Any]] = None):
         self.page_content = page_content
         self.metadata = metadata or {}
 
@@ -82,41 +82,52 @@ async def process_chat_message(request: ChatRequest) -> ChatResponse:
         save_chat_history(request.session_id, request.message, cached_answer, ["Cached"])
         return response
 
-    # For now we are not running any RAG pipeline; return a simple placeholder.
-    # This avoids pulling in LangChain dependencies which are incompatible with
-    # the installed pydantic version. The rest of the system (cache/database)
-    # continues to work normally.
-
-    # 2️⃣ VECTOR RETRIEVAL - Get relevant medical documents
     try:
-        from app.rag.vectorstore import get_vector_store
+        from app.rag.vectorstore import get_vector_store, SimpleDocument
         from app.rag.chain import get_rag_chain
 
         vectorstore = get_vector_store()
-        rag_chain = get_rag_chain()
 
-        # Retrieve relevant documents
+        if len(vectorstore.documents) == 0:
+            try:
+                from app.rag.loader import load_medical_documents
+                loaded_docs = load_medical_documents(settings.PDF_FOLDER)
+                if loaded_docs:
+                    vectorstore.add_documents([
+                        SimpleDocument(page_content=doc.page_content, metadata=doc.metadata)
+                        for doc in loaded_docs
+                    ])
+                    logger.info(f"Loaded and indexed {len(loaded_docs)} documents")
+            except Exception as load_error:
+                logger.warning(f"Could not auto-load documents: {str(load_error)}")
+
         docs = vectorstore.similarity_search(request.message, k=settings.TOP_K)
         logger.info(f"Retrieved {len(docs)} relevant documents")
 
-        # Extract sources
         sources = []
         for doc in docs:
-            if hasattr(doc, 'metadata') and doc.metadata:
-                source = doc.metadata.get('source', 'Unknown')
-                page = doc.metadata.get('page', 'N/A')
-                sources.append(f"{source} (Page {page})")
+            metadata = getattr(doc, "metadata", {}) or {}
+            source = metadata.get("source", "Unknown")
+            page = metadata.get("page", "N/A")
+            sources.append(f"{source} (Page {page})")
 
-        # 3️⃣ LLM PROCESSING - Generate answer with context
+        rag_chain = get_rag_chain()
         answer = rag_chain(request.message, docs)
         logger.info("✅ RAG pipeline completed successfully")
 
     except Exception as e:
-        logger.error(f"RAG pipeline failed: {str(e)}. Using fallback response.")
-        answer = f"I apologize, but I'm currently unable to access the medical knowledge base. Error: {str(e)}. Please try again later or contact support."
-        sources = ["Error: Knowledge base unavailable"]
+        logger.error(f"RAG pipeline failed: {str(e)}. Falling back to direct answer.")
+        try:
+            from app.rag.chain import get_rag_chain
+            rag_chain = get_rag_chain()
+            answer = rag_chain(request.message, [])
+            sources = []
+            logger.info("✅ Fallback direct model response generated")
+        except Exception as inner:
+            logger.error(f"Fallback model call failed: {str(inner)}")
+            answer = "I apologize, but I'm currently unable to access the medical knowledge base. Please try again later."
+            sources = ["Error: Knowledge base unavailable"]
 
-    # persist to cache and history
     save_to_cache(normalized_question, answer)
     save_chat_history(request.session_id, request.message, answer, sources)
 
@@ -125,5 +136,4 @@ async def process_chat_message(request: ChatRequest) -> ChatResponse:
         sources=sources,
         session_id=request.session_id
     )
-    logger.info("✅ Returned placeholder response")
     return response
