@@ -5,11 +5,11 @@
 ## 1️⃣ Prerequisites Check
 
 ```bash
-# Check Docker
-docker --version
-docker-compose --version
+# Check Python version
+python --version  # Should be 3.11+
 
-# Should see: Docker version 20.x+ and Docker Compose version 2.x+
+# Check if pip is available
+pip --version
 ```
 
 **Get Groq API Key**:
@@ -24,30 +24,66 @@ docker-compose --version
 # Navigate to project
 cd chatbot
 
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # Linux/macOS
+# venv\Scripts\activate   # Windows
+
+# Install dependencies
+pip install -r requirements.txt
+
 # Create environment file
-cp .env.example .env
+touch .env
 
 # Edit .env and add your Groq API key
-# On Windows: notepad .env
-# On macOS/Linux: nano .env
-
-# Find this line and replace:
-# GROQ_API_KEY=your_groq_api_key_here
+echo "GROQ_API_KEY=your_groq_api_key_here" > .env
+# Or edit manually with your preferred editor
 ```
 
 ## 3️⃣ Start Services (3 minutes)
 
+### Start Backend (Terminal 1)
 ```bash
-# Build and start all containers
-docker-compose -f docker/docker-compose.yml up -d --build
-
-# Wait for services to start
-# This may take 2-3 minutes on first run
+cd backend
+PYTHONPATH=/path/to/chatbot/backend uvicorn app.main:app --reload --host 0.0.0.0 --port 8001
 ```
 
-**Verify services are running**:
+### Start Frontend (Terminal 2)
 ```bash
-docker-compose ps
+cd frontend
+streamlit run app.py --server.port 8501 --server.address 0.0.0.0
+```
+
+## 4️⃣ Test the Application (5 minutes)
+
+1. **Open browser**: http://localhost:8501
+2. **Ask a medical question**, e.g.:
+   - "What are the symptoms of diabetes?"
+   - "How does insulin work?"
+   - "What causes hypertension?"
+
+3. **Verify responses include**:
+   - ✅ Medical answer from textbooks
+   - ✅ Source citations (book names + page numbers)
+   - ✅ Educational disclaimer
+
+## 5️⃣ Optional: Manual PDF Ingestion
+
+If you want to manually ingest PDFs (auto-loads when vector store is empty):
+
+```bash
+python script/ingest_doc.py
+```
+
+## 🎯 You're Done!
+
+Your Medical RAG Chatbot is now running with:
+- **Backend API**: http://localhost:8001
+- **Frontend UI**: http://localhost:8501
+- **Medical Knowledge Base**: Harrison's, Guyton, Kumar & Clark's, etc.
+- **AI Model**: Groq's llama-3.3-70b-versatile
+
+**Need Help?** Check the main README.md for detailed documentation.
 # Should show: vdms, backend, frontend all as "running"
 ```
 
