@@ -1,4 +1,4 @@
-# Simple RAG chain implementation that bypasses LangChain compatibility issues
+# Simple RAG chain implementation using direct Groq API calls
 import requests
 from app.core.config import settings
 from app.utils.logger import get_logger
@@ -6,58 +6,55 @@ from app.utils.logger import get_logger
 logger = get_logger("rag_chain")
 
 def get_rag_chain():
-    """
-    Returns a simple RAG chain function that directly calls Groq API.
-    This bypasses LangChain's pydantic compatibility issues.
-    """
-    def rag_chain(query: str, context_docs: list = None) -> str:
-        """
-        Simple RAG implementation:
-        1. Format context from retrieved documents
-        2. Call Groq API directly
-        3. Return response
-        """
+    """Return a callable RAG chain function."""
+    def rag_chain(query: str, context_docs: list | None = None) -> str:
+        """Generate an answer from Groq using retrieved context documents."""
+        context = ""
+        if context_docs:
+            formatted_docs = []
+            for doc in context_docs[: settings.TOP_K]:
+                metadata = getattr(doc, "metadata", {}) or {}
+                source = metadata.get("source", "Unknown source")
+                page = metadata.get("page", "N/A")
+                formatted_docs.append(
+                    f"Source: {source} (Page {page})\n{doc.page_content.strip()}"
+                )
+            context = "\n\n".join(formatted_docs)
+            context = f"Context from medical documents:\n{context}\n\n"
+
+        prompt = (
+            "You are a medical AI assistant. Answer the user's question based on the provided context. "
+            "If the context does not contain the answer, say you don't know rather than inventing facts. "
+            "Use citations from the context when available.\n\n"
+            f"{context}Question: {query}\n\nAnswer:"
+        )
+
+        headers = {
+            "Authorization": f"Bearer {settings.GROQ_API_KEY}",
+            "Content-Type": "application/json",
+        }
+
+        payload = {
+            "model": settings.LLM_MODEL,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": settings.TEMPERATURE,
+            "max_tokens": 1000,
+        }
+
         try:
-            # Format context
-            context = ""
-            if context_docs:
-                context = "\n\n".join([doc.page_content for doc in context_docs[:3]])  # Limit to 3 docs
-                context = f"Context from medical documents:\n{context}\n\n"
-
-            # Create prompt
-            prompt = f"""You are a medical AI assistant. Answer the following question based on the provided context.
-
-{context}Question: {query}
-
-Please provide a helpful, accurate answer based on medical knowledge. If the context is insufficient, use your general medical knowledge but note that."""
-
-            # Call Groq API directly
             response = requests.post(
                 "https://api.groq.com/openai/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {settings.GROQ_API_KEY}",
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "model": settings.LLM_MODEL,
-                    "messages": [{"role": "user", "content": prompt}],
-                    "temperature": settings.TEMPERATURE,
-                    "max_tokens": 1000
-                },
-                timeout=30
+                headers=headers,
+                json=payload,
+                timeout=30,
             )
-
-            if response.status_code == 200:
-                result = response.json()
-                answer = result["choices"][0]["message"]["content"]
-                logger.info(f"RAG chain completed successfully for query: {query[:50]}...")
-                return answer
-            else:
-                logger.error(f"Groq API error: {response.status_code} - {response.text}")
-                return f"Error: Unable to get response from AI service (Status: {response.status_code})"
-
+            response.raise_for_status()
+            result = response.json()
+            answer = result["choices"][0]["message"]["content"]
+            logger.info("RAG chain completed successfully")
+            return answer.strip()
         except Exception as e:
-            logger.error(f"RAG chain error: {str(e)}")
-            return f"Error: {str(e)}"
+            logger.error(f"Groq API error: {str(e)}")
+            raise RuntimeError(f"Failed to generate answer from Groq: {str(e)}")
 
     return rag_chain
