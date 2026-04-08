@@ -4,6 +4,7 @@ Loads environment variables from .env files.
 """
 import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Extra
 
 
 class Settings(BaseSettings):
@@ -46,15 +47,15 @@ class Settings(BaseSettings):
     CORS_ORIGINS: list = ["*"]
     
     # ==================== PDF INGESTION ====================
-    PDF_FOLDER: str = "./Document"
+    PDF_FOLDER: str = "/home/sahajgyawali45/abc/chatbot/Document"
     CHUNK_SIZE: int = 700
     CHUNK_OVERLAP: int = 120
     
     # Pydantic V2 config
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file="/home/sahajgyawali45/abc/chatbot/.env",
         env_file_encoding='utf-8',
-        extra='ignore',
+        extra=Extra.allow,
         case_sensitive=False
     )
 
