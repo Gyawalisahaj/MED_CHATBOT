@@ -13,48 +13,46 @@ A sophisticated educational medical AI system that combines Retrieval-Augmented 
 - [PDF Ingestion](#pdf-ingestion)
 - [API Documentation](#api-documentation)
 - [Database Schema](#database-schema)
-- [Advanced Features](#advanced-features)
 - [Troubleshooting](#troubleshooting)
 
 ## ✨ Features
 
 ### Core Features
-- **🔍 Semantic Search**: Uses vector embeddings for intelligent document retrieval
+- **🔍 Semantic Search**: Uses sentence-transformer embeddings for intelligent document retrieval
 - **📚 Multi-PDF Support**: Ingests and indexes multiple medical textbooks (Harrison's, Guyton, Kumar & Clark's, etc.)
 - **💾 SQLite Integration**: Persistent chat history and document metadata tracking
 - **⚡ Smart Caching**: Intelligent query caching to improve response times
 - **📄 Source Attribution**: Shows which documents/pages answered your question
-- **🎨 Modern React Frontend**: Clean, responsive UI with real-time chat
-- **🔐 Medical Guardrails**: Ensures the AI provides educational content with appropriate disclaimers
+- **🎨 Modern Streamlit Frontend**: Clean, responsive UI with real-time chat
+- **🔐 Medical Safety**: Educational content with appropriate disclaimers
 
 ### Advanced Features
 - **Structured Medical Search**: Filter by topic, symptoms, causes, treatments, drugs
-- **Document Summarization**: Auto-generate summaries of medical topics
 - **Session Management**: Track conversations per user session
 - **Chat History Persistence**: Stored in SQLite for analytics and learning
-- **Performance Optimization**: Batch ingestion and MMR retrieval for better results
+- **Performance Optimization**: Custom vector store with similarity search
 - **Configurable Environment**: Easy setup with .env files
 
 ## 🏗️ Project Architecture
 
 ```
 Medical RAG Chatbot
-├── Backend (FastAPI + LangChain)
+├── Backend (FastAPI)
 │   ├── API Layer (chat endpoint, history retrieval)
-│   ├── RAG Chain (retrieval → context formatting → LLM generation)
-│   ├── Vector Store (VDMS - Intel Vector Database)
-│   ├── SQLite Database (chat history, metadata)
+│   ├── RAG Chain (retrieval → context formatting → Groq LLM)
+│   ├── Vector Store (Custom sentence-transformer implementation)
+│   ├── SQLite Database (chat history)
 │   ├── Services (chat processing, embeddings, caching)
-│   └── Core (config, prompts, guardrails)
+│   └── Core (config, logging)
 ├── Frontend (Streamlit)
 │   ├── Interactive Chat Interface
 │   ├── Message Display with Sources
 │   ├── Session Management
 │   └── Responsive Design
 └── Infrastructure
-    ├── Docker Compose (orchestration)
-    ├── VDMS Container (vector database)
-    └── Multi-stage Build (optimized frontend)
+    ├── Docker Support (backend and frontend)
+    ├── Custom Vector Store (numpy-based)
+    └── Local Development Setup
 ```
 
 ### Data Flow
@@ -62,12 +60,12 @@ Medical RAG Chatbot
 ```
 User Query
     ↓
-[Frontend React App]
+[Frontend Streamlit App]
     ↓
 [FastAPI Backend]
     ├→ 1. Query Normalization
     ├→ 2. Cache Lookup (Hit? Return cached answer)
-    ├→ 3. Vector Retrieval (VDMS + MMR)
+    ├→ 3. Vector Retrieval (Sentence Transformers + Similarity Search)
     ├→ 4. LLM Processing (Groq API)
     ├→ 5. Source Attribution
     └→ 6. SQLite History Persistence
@@ -80,9 +78,7 @@ User Query
 ## 📋 Prerequisites
 
 ### System Requirements
-- **Docker & Docker Compose** (recommended for full stack)
 - **Python 3.11+** (for local development)
-- **Node.js 18+** (for frontend development)
 - **4GB+ RAM** (for embeddings and LLM)
 - **Groq API Key** (free: https://console.groq.com/)
 
@@ -96,62 +92,57 @@ Place PDF files in the `Document/` folder:
 
 ## 🚀 Installation & Setup
 
-### Option 1: Docker Compose (Recommended)
+### Local Development Setup
 
 1. **Clone and navigate to project**
    ```bash
    cd chatbot
    ```
 
-2. **Create environment file**
+2. **Create virtual environment**
    ```bash
-   cp .env.example .env
-   # Edit .env with your Groq API key
-   ```
-
-3. **Build and start containers**
-   ```bash
-   docker-compose -f docker/docker-compose.yml up -d --build
-   ```
-
-4. **Ingest medical PDFs** (inside backend container)
-   ```bash
-   docker-compose exec backend python script/ingest_doc.py
-   ```
-
-5. **Access the application**
-   - Frontend: http://localhost:8501
-   - Backend API: http://localhost:8000
-   - API Docs: http://localhost:8000/docs
-
-### Option 2: Local Development Setup
-
-1. **Backend Setup**
-   ```bash
-   # Create virtual environment
    python -m venv venv
-   source venv/Scripts/activate  # Windows
-   # source venv/bin/activate    # macOS/Linux
-   
-   # Install dependencies
-   pip install -r requirements.txt
-   
-   # Create .env file
-   cp .env.example .env
-   
-   # Run VDMS locally (requires Docker)
-   docker run -p 55555:55555 vdms:latest
-   
-   # Ingest PDFs
-   python script/ingest_doc.py
-   
-   # Start backend
-   uvicorn backend.app.main:app --reload --host 0.0.0.0 --port 8000
+   source venv/bin/activate  # Linux/macOS
+   # venv\Scripts\activate   # Windows
    ```
 
-2. **Frontend Setup**
+3. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Create environment file**
+   ```bash
+   # Create .env file in project root
+   touch .env
+   ```
+
+   Add your Groq API key:
+   ```
+   GROQ_API_KEY=your_groq_api_key_here
+   ```
+
+5. **Ingest medical PDFs** (optional - auto-loads when empty)
+   ```bash
+   python script/ingest_doc.py
+   ```
+
+6. **Start the backend**
+   ```bash
+   cd backend
+   PYTHONPATH=/path/to/chatbot/backend uvicorn app.main:app --reload --host 0.0.0.0 --port 8001
+   ```
+
+7. **Start the frontend** (in a new terminal)
    ```bash
    cd frontend
+   streamlit run app.py --server.port 8501 --server.address 0.0.0.0
+   ```
+
+8. **Access the application**
+   - Frontend: http://localhost:8501
+   - Backend API: http://localhost:8001
+   - API Docs: http://localhost:8001/docs
    
    # Create .env (or use defaults)
    echo "BACKEND_URL=http://localhost:8000" > .streamlit/secrets.toml
