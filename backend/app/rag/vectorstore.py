@@ -1,88 +1,85 @@
-# Simple vector store implementation without LangChain dependencies
+# Minimal vector store implementation using sentence-transformer embeddings
 import os
 import json
 import numpy as np
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from app.core.config import settings
 from app.rag.embeddings import get_embeddings_model
 
 class SimpleDocument:
-    def __init__(self, page_content: str, metadata: Dict[str, Any] = None):
+    def __init__(self, page_content: str, metadata: Optional[Dict[str, Any]] = None):
         self.page_content = page_content
         self.metadata = metadata or {}
 
 class SimpleVectorStore:
     def __init__(self):
-        self.documents = []
-        self.embeddings = []
+        self.documents: List[SimpleDocument] = []
+        self.embeddings: np.ndarray = np.array([], dtype=np.float32)
         self.embeddings_model = get_embeddings_model()
         self.index_path = os.path.join(settings.VECTOR_STORE_PATH or "./vector_store", "simple_index.json")
+        os.makedirs(os.path.dirname(self.index_path), exist_ok=True)
         self.load_index()
 
     def load_index(self):
-        """Load existing index if available"""
+        """Load index from disk if available."""
         if os.path.exists(self.index_path):
             try:
-                with open(self.index_path, 'r') as f:
+                with open(self.index_path, "r") as f:
                     data = json.load(f)
-                    self.documents = [SimpleDocument(**doc) for doc in data.get('documents', [])]
-                    self.embeddings = np.array(data.get('embeddings', []))
+                    self.documents = [SimpleDocument(**doc) for doc in data.get("documents", [])]
+                embeddings = data.get("embeddings", [])
+                self.embeddings = np.array(embeddings, dtype=np.float32)
+                if self.embeddings.size == 0:
+                    self.embeddings = np.array([], dtype=np.float32)
+                elif self.embeddings.ndim == 1:
+                    self.embeddings = np.atleast_2d(self.embeddings)
                 print(f"Loaded {len(self.documents)} documents from index")
             except Exception as e:
                 print(f"Could not load index: {e}")
                 self.documents = []
-                self.embeddings = np.array([])
+                self.embeddings = np.array([], dtype=np.float32)
 
     def save_index(self):
-        """Save current index to disk"""
-        os.makedirs(os.path.dirname(self.index_path), exist_ok=True)
+        """Save index to disk."""
         data = {
-            'documents': [{'page_content': doc.page_content, 'metadata': doc.metadata} for doc in self.documents],
-            'embeddings': self.embeddings.tolist() if len(self.embeddings) > 0 else []
+            "documents": [
+                {"page_content": doc.page_content, "metadata": doc.metadata}
+                for doc in self.documents
+            ],
+            "embeddings": self.embeddings.tolist() if self.embeddings.size else [],
         }
-        with open(self.index_path, 'w') as f:
+        with open(self.index_path, "w") as f:
             json.dump(data, f)
         print(f"Saved {len(self.documents)} documents to index")
 
     def add_documents(self, documents: List[SimpleDocument]):
-        """Add documents to the vector store"""
-        for doc in documents:
-            self.documents.append(doc)
-            # Generate embedding
-            embedding = self.embeddings_model.embed_query(doc.page_content)
-            self.embeddings = np.vstack([self.embeddings, embedding]) if len(self.embeddings) > 0 else np.array([embedding])
+        """Add documents to the vector store and update the index."""
+        if not documents:
+            return
+
+        texts = [doc.page_content for doc in documents]
+        embeddings = np.array(self.embeddings_model.embed_documents(texts), dtype=np.float32)
+        if self.embeddings.size == 0:
+            self.embeddings = embeddings
+        else:
+            self.embeddings = np.vstack([self.embeddings, embeddings])
+
+        self.documents.extend(documents)
         self.save_index()
 
     def similarity_search(self, query: str, k: int = 5) -> List[SimpleDocument]:
-        """Find most similar documents"""
+        """Return the top-k most similar documents for the query."""
         if len(self.documents) == 0:
             return []
 
-        # Generate query embedding
-        query_embedding = np.array(self.embeddings_model.embed_query(query))
-
-        # Calculate cosine similarities
-        similarities = np.dot(self.embeddings, query_embedding) / (
-            np.linalg.norm(self.embeddings, axis=1) * np.linalg.norm(query_embedding)
-        )
-
-        # Get top k indices
+        query_embedding = np.array(self.embeddings_model.embed_query(query), dtype=np.float32)
+        query_norm = np.linalg.norm(query_embedding) + 1e-10
+        doc_norms = np.linalg.norm(self.embeddings, axis=1) + 1e-10
+        similarities = np.dot(self.embeddings, query_embedding) / (doc_norms * query_norm)
         top_indices = np.argsort(similarities)[-k:][::-1]
-
-        # Return top documents
         return [self.documents[i] for i in top_indices]
 
-_vectorstore = None
 
 def get_vector_store():
-    """Get singleton vector store instance"""
-    global _vectorstore
-    if _vectorstore is None:
-        _vectorstore = SimpleVectorStore()
-    return _vectorstore
-
-def save_vector_store():
-    """Save the vector store"""
-    global _vectorstore
-    if _vectorstore:
-        _vectorstore.save_index()
+    """Returns singleton vector store instance."""
+    return SimpleVectorStore()
