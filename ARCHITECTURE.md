@@ -8,9 +8,9 @@
 │                        Complete System Architecture                         │
 └─────────────────────────────────────────────────────────────────────────────┘
 
-                            FRONTEND LAYER (React)
+                            FRONTEND LAYER (Streamlit)
                     ┌──────────────────────────────────────┐
-                    │  React Chat Interface (3000)         │
+                    │  Streamlit Chat Interface (8501)     │
                     │  ├─ Chat Messages Display            │
                     │  ├─ User Input Component             │
                     │  ├─ Source Citation Viewer           │
@@ -21,7 +21,7 @@
                         (HTTP/REST API Calls)
                                   ↓
                     ┌──────────────────────────────────────┐
-                    │      API GATEWAY (FastAPI 8000)      │
+                    │      API GATEWAY (FastAPI 8001)      │
                     │  ├─ CORS Middleware                  │
                     │  ├─ Request Validation               │
                     │  └─ Response Formatting              │
@@ -48,6 +48,121 @@
                     │  └────────────────────────────────┘  │
                     └──────────────────────────────────────┘
                                   ↓
+                    ┌──────────────────────────────────────┐
+                    │      RAG PIPELINE LAYER              │
+                    │                                      │
+                    │  ┌────────────────────────────────┐  │
+                    │  │ Vector Store (Custom)         │  │
+                    │  │ ├─ Sentence Transformers       │  │
+                    │  │ ├─ Numpy-based Similarity      │  │
+                    │  │ ├─ JSON Persistence            │  │
+                    │  │ └─ Auto Document Loading       │  │
+                    │  └────────────────────────────────┘  │
+                    │                                      │
+                    │  ┌────────────────────────────────┐  │
+                    │  │ RAG Chain (Direct Groq)       │  │
+                    │  │ ├─ Context Formatting          │  │
+                    │  │ ├─ Groq API Integration       │  │
+                    │  │ ├─ Source Attribution          │  │
+                    │  │ └─ Error Handling              │  │
+                    │  └────────────────────────────────┘  │
+                    └──────────────────────────────────────┘
+                                  ↓
+                    ┌──────────────────────────────────────┐
+                    │      DATA PERSISTENCE LAYER          │
+                    │                                      │
+                    │  ┌────────────────────────────────┐  │
+                    │  │ SQLite Database                │  │
+                    │  │ ├─ Chat History Table          │  │
+                    │  │ ├─ Session Management          │  │
+                    │  │ └─ Analytics Support           │  │
+                    │  └────────────────────────────────┘  │
+                    │                                      │
+                    │  ┌────────────────────────────────┐  │
+                    │  │ Document Storage               │  │
+                    │  │ ├─ PDF Files in Document/      │  │
+                    │  │ ├─ Automatic Loading           │  │
+                    │  │ └─ Metadata Extraction         │  │
+                    │  └────────────────────────────────┘  │
+                    └──────────────────────────────────────┘
+```
+
+## Data Flow Architecture
+
+### 1. User Interaction Flow
+```
+User Query → Streamlit UI → FastAPI Backend → RAG Pipeline → Response → UI Display
+```
+
+### 2. RAG Pipeline Flow
+```
+Query → Cache Check → Vector Retrieval → Context Formatting → Groq LLM → Source Attribution → Response
+```
+
+### 3. Document Processing Flow
+```
+PDF Files → PyPDF Loader → Text Splitting → Sentence Transformers → Vector Store → Similarity Search
+```
+
+## Component Details
+
+### Frontend (Streamlit)
+- **Technology**: Streamlit framework
+- **Port**: 8501
+- **Features**:
+  - Real-time chat interface
+  - Session management
+  - Source citation display
+  - Backend health monitoring
+  - Responsive design
+
+### Backend (FastAPI)
+- **Technology**: FastAPI framework
+- **Port**: 8001
+- **Features**:
+  - RESTful API endpoints
+  - Request validation with Pydantic
+  - CORS middleware
+  - Automatic API documentation
+
+### Vector Store (Custom Implementation)
+- **Technology**: Numpy + Sentence Transformers
+- **Features**:
+  - In-memory embeddings with JSON persistence
+  - Cosine similarity search
+  - Automatic document loading
+  - Efficient storage and retrieval
+
+### RAG Chain (Direct Groq Integration)
+- **Technology**: Direct API calls to Groq
+- **Features**:
+  - Context-aware prompting
+  - Source attribution
+  - Error handling and fallbacks
+  - Medical-specific formatting
+
+### Database (SQLite)
+- **Technology**: SQLAlchemy ORM
+- **Features**:
+  - Chat history persistence
+  - Session tracking
+  - Query analytics support
+
+## Performance Characteristics
+
+- **Embedding Model**: sentence-transformers/all-MiniLM-L6-v2 (384 dimensions)
+- **Vector Search**: Cosine similarity with top-k retrieval
+- **LLM**: Groq llama-3.3-70b-versatile (fast inference)
+- **Caching**: In-memory query cache with TTL
+- **Storage**: JSON-based vector persistence
+
+## Security Considerations
+
+- API key management via environment variables
+- Input validation and sanitization
+- Educational disclaimers in responses
+- No personal medical advice generation
+- Source transparency for accountability
         ┌─────────────────────────┼─────────────────────────┐
         ↓                         ↓                         ↓
   ┌───────────────┐      ┌──────────────────┐    ┌──────────────────┐
