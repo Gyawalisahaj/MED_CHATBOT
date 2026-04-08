@@ -89,7 +89,7 @@ class MedicalChatAPIClient:
     """Client for communicating with Medical RAG backend"""
     
     def __init__(self, base_url: str = None):
-        self.base_url = base_url or os.getenv("BACKEND_URL", "http://localhost:8000")
+        self.base_url = base_url or os.getenv("BACKEND_URL", "http://localhost:8001")
         self.timeout = 60
     
     def send_message(self, message: str, session_id: str) -> Dict:
@@ -146,6 +146,12 @@ class MedicalChatAPIClient:
             return False
 
 # ============================================================================
+# BACKEND API CONFIGURATION
+# ============================================================================
+
+BACKEND_URL = st.secrets.get("BACKEND_URL", "http://localhost:8001")
+
+# ============================================================================
 # SESSION STATE INITIALIZATION
 # ============================================================================
 
@@ -156,7 +162,9 @@ if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
 if "api_client" not in st.session_state:
-    st.session_state.api_client = MedicalChatAPIClient()
+    st.session_state.api_client = MedicalChatAPIClient(BACKEND_URL)
+elif st.session_state.api_client.base_url != BACKEND_URL:
+    st.session_state.api_client = MedicalChatAPIClient(BACKEND_URL)
 
 if "show_welcome" not in st.session_state:
     st.session_state.show_welcome = True
@@ -210,7 +218,7 @@ with st.sidebar:
     st.markdown("### ⚙️ Settings")
     backend_url = st.text_input(
         "Backend URL",
-        value=os.getenv("BACKEND_URL", "http://localhost:8000"),
+        value=os.getenv("BACKEND_URL", "http://localhost:8001"),
         help="Change if backend is on different host"
     )
     if backend_url != st.session_state.api_client.base_url:
@@ -442,9 +450,8 @@ if "chat_history" not in st.session_state:
 if "last_audio_ts" not in st.session_state:
     st.session_state.last_audio_ts = None
 
-# Backend API Configuration
-BACKEND_URL = st.secrets.get("BACKEND_URL", "http://localhost:8000")
-client = MedicalChatAPIClient(BACKEND_URL)
+# Backend API Configuration is handled earlier in the file
+client = st.session_state.api_client
 
 st.title("🩺 MediQuery Assistant")
 st.markdown("---")
