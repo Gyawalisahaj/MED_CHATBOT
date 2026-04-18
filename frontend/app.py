@@ -186,13 +186,7 @@ with st.sidebar:
     
     st.divider()
     
-    # API Status
-    if st.session_state.api_client.health_check():
-        st.success("✅ Backend Online")
-    else:
-        st.error("❌ Backend Offline")
     
-    st.divider()
     
     # Chat Controls
     st.markdown("### 💬 Chat Controls")
@@ -215,7 +209,11 @@ with st.sidebar:
     st.divider()
     
     # Settings
-    st.markdown("### ⚙️ Settings")
+    st.markdown("### Backend Configuration")
+    if st.session_state.api_client.health_check():
+        st.success("✅ Backend Online")
+    else:
+        st.error("❌ Backend Offline")
     backend_url = st.text_input(
         "Backend URL",
         value=os.getenv("BACKEND_URL", "http://localhost:8001"),
@@ -283,120 +281,9 @@ with chat_container:
             "### Welcome to MediQuery AI 👋\n\n"
             "Ask any medical question and get answers backed by medical literature. "
             "Sources are provided for every answer.\n\n"
-            "**Example questions:**\n"
-            "- What are the symptoms of diabetes mellitus?\n"
-            "- Explain the pathophysiology of hypertension\n"
-            "- What is the treatment for pneumonia?\n"
-            "- What are the side effects of aspirin?"
+            "Feel free to ask anything!"
         )
     
-    # Display chat history
-    for msg in st.session_state.chat_history:
-        # User message
-        st.markdown(
-            f"""
-            <div class='user-message'>
-                <b>You:</b><br>{msg.get('message', '')}
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-        
-        # Assistant message
-        st.markdown(
-            f"""
-            <div class='assistant-message'>
-                <b>MediQuery AI:</b><br>{msg.get('response', '')}
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-        
-        # Sources
-        sources = msg.get('sources', [])
-        if sources:
-            with st.expander(f"📄 Sources ({len(sources)})"):
-                for source in sources:
-                    st.markdown(
-                        f"<div class='source-item'>{source}</div>",
-                        unsafe_allow_html=True
-                    )
-        
-        st.divider()
-
-# ============================================================================
-# INPUT & PROCESSING
-# ============================================================================
-
-# Query input
-# The first positional argument of chat_input serves as the placeholder in
-# newer Streamlit versions, so we only supply it and avoid keyword conflicts.
-user_input = st.chat_input(
-    placeholder="Type your medical question... (e.g., What are the symptoms of diabetes?)"
-)
-
-if user_input:
-    st.session_state.show_welcome = False
-    
-    # Display user message immediately
-    st.markdown(
-        f"""
-        <div class='user-message'>
-            <b>You:</b><br>{user_input}
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-    
-    # Processing with spinner
-    with st.spinner("🔍 Searching medical database..."):
-        try:
-            response = st.session_state.api_client.send_message(
-                message=user_input,
-                session_id=st.session_state.session_id
-            )
-            
-            answer = response.get("answer", "No answer found")
-            sources = response.get("sources", [])
-            
-            # Display assistant response
-            st.markdown(
-                f"""
-                <div class='assistant-message'>
-                    <b>MediQuery AI:</b><br>{answer}
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-            
-            # Display sources
-            if sources:
-                with st.expander(f"📄 Sources ({len(sources)})"):
-                    for source in sources:
-                        st.markdown(
-                            f"<div class='source-item'>{source}</div>",
-                            unsafe_allow_html=True
-                        )
-            
-            # Add to history (standardized format)
-            st.session_state.chat_history.append({
-                "user": user_input,
-                "assistant": answer,
-                "sources": sources,
-                "timestamp": datetime.now().isoformat()
-            })
-            
-        except Exception as e:
-            st.error(
-                f"""
-                ❌ Error processing query: {str(e)}
-                
-                **Troubleshooting:**
-                - Check if backend is running at {st.session_state.api_client.base_url}
-                - Ensure VDMS vector database is available
-                - Check your Groq API key is valid
-                """
-            )
 
 # ============================================================================
 # FOOTER
@@ -441,7 +328,9 @@ st.markdown(
 
 
 # Load Styles
-with open("style.css") as f:
+import os
+css_path = os.path.join(os.path.dirname(__file__), "style.css")
+with open(css_path) as f:
     st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 # Initialize Session State
@@ -456,27 +345,6 @@ client = st.session_state.api_client
 st.title("🩺 MediQuery Assistant")
 st.markdown("---")
 
-# --- SIDEBAR: Voice Input ---
-with st.sidebar:
-    st.header("🎙️ Voice Control")
-    st.info("Record your question if you prefer not to type.")
-    # audio_input may not be available in this Streamlit version
-    audio_data = None
-    if hasattr(st, "audio_input"):
-        try:
-            audio_data = st.audio_input("Microphone")
-        except Exception:
-            audio_data = None
-    
-    # Process Voice Input if new audio is detected
-    voice_query = None
-    if audio_data:
-        # Simple check to avoid re-processing same recording on every rerun
-        with st.spinner("🎙️ Transcribing voice..."):
-            try:
-                voice_query = client.transcribe_audio(audio_data.getvalue())
-            except Exception:
-                st.error("Transcription failed.")
 
 # --- MAIN: Chat Display ---
 for i, chat in enumerate(st.session_state.chat_history):
@@ -486,21 +354,16 @@ for i, chat in enumerate(st.session_state.chat_history):
     with st.chat_message("assistant"):
         st.markdown(chat["assistant"])
         
-        # Accessibility: Read Aloud Button
-        if st.button(f"🔊 Read Aloud", key=f"speak_{i}"):
-            with st.spinner("Preparing audio..."):
-                audio_b64 = client.get_text_to_speech(chat["assistant"])
-                # Inject autoplaying audio element
-                st.markdown(
-                    f'<audio src="data:audio/mp3;base64,{audio_b64}" autoplay hidden></audio>', 
-                    unsafe_allow_html=True
-                )
+        if "sources" in chat and chat["sources"]:
+            with st.expander("📄 View Sources"):
+                for s in chat["sources"]:
+                    st.markdown(f"- {s}")
 
 # --- USER INPUT LOGIC ---
 user_input = st.chat_input("Type your medical query...")
 
 # Priority: If voice_query exists from the sidebar, use it. Otherwise use text input.
-final_query = voice_query or user_input
+final_query = user_input
 
 if final_query:
     # Add User Message
@@ -513,7 +376,7 @@ if final_query:
             try:
                 response = client.send_message(
                     message=final_query,
-                    history=st.session_state.chat_history
+                    session_id=st.session_state.session_id
                 )
                 answer = response.get("answer", "I couldn't find an answer.")
                 sources = response.get("sources", [])
