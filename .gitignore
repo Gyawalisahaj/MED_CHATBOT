@@ -8,3 +8,5 @@ data/raw_docs/*.pdf
 .local.env
 .local.env
 Document/*.pdf
+backend/vector_store/
+*.db
