@@ -1,36 +1,38 @@
-# 🏥 Medical RAG Chatbot - Advanced Retrieval-Augmented Generation
+# 🏥 Medical RAG Chatbot - High-Performance Retrieval-Augmented Generation
 
-A sophisticated educational medical AI system that combines Retrieval-Augmented Generation (RAG) with large language models to provide evidence-based medical information for students and healthcare professionals.
+A sophisticated educational medical AI system that combines Retrieval-Augmented Generation (RAG) with Groq's Llama 3 LLM to provide evidence-based medical information for students and healthcare professionals. Built with FastAPI, Streamlit, and advanced semantic search capabilities.
 
 ## 📋 Table of Contents
 
 - [Features](#features)
+- [Tech Stack](#tech-stack)
 - [Project Architecture](#project-architecture)
 - [Prerequisites](#prerequisites)
 - [Installation & Setup](#installation--setup)
 - [Configuration](#configuration)
 - [Running the Application](#running-the-application)
-- [PDF Ingestion](#pdf-ingestion)
 - [API Documentation](#api-documentation)
 - [Database Schema](#database-schema)
+- [Docker Deployment](#docker-deployment)
 - [Troubleshooting](#troubleshooting)
 
 ## ✨ Features
 
-### Core Features
-- **🔍 Semantic Search**: Uses sentence-transformer embeddings for intelligent document retrieval
+### Core FeaturesSentence-Transformers (all-MiniLM-L6-v2) for intelligent document retrieval
 - **📚 Multi-PDF Support**: Ingests and indexes multiple medical textbooks (Harrison's, Guyton, Kumar & Clark's, etc.)
 - **💾 SQLite Integration**: Persistent chat history and document metadata tracking
-- **⚡ Smart Caching**: Intelligent query caching to improve response times
-- **📄 Source Attribution**: Shows which documents/pages answered your question
-- **🎨 Modern Streamlit Frontend**: Clean, responsive UI with real-time chat
+- **⚡ Smart Caching**: In-memory query caching to improve response times for repeated questions
+- **📄 Source Attribution**: Shows which documents and page numbers answered your question
+- **🎨 Modern Streamlit Frontend**: Clean, responsive real-time chat interface
 - **🔐 Medical Safety**: Educational content with appropriate disclaimers
 
 ### Advanced Features
-- **Structured Medical Search**: Filter by topic, symptoms, causes, treatments, drugs
-- **Session Management**: Track conversations per user session
-- **Chat History Persistence**: Stored in SQLite for analytics and learning
-- **Performance Optimization**: Custom vector store with similarity search
+- **Fast LLM Processing**: Powered by Groq's API with Llama 3.3-70b model
+- **Session Management**: Track conversations per user session with UUID tracking
+- **Chat History Analytics**: Stored in SQLite for user analytics and learning insights
+- **Custom Vector Store**: Optimized numpy-based similarity search with JSON persistence
+- **Environment-Driven Config**: Fully configurable with .env file support
+- **Docker-Ready**: Complete containerization for production deploymentimilarity search
 - **Configurable Environment**: Easy setup with .env files
 
 ## 🏗️ Project Architecture
