@@ -6,6 +6,9 @@ import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Extra
 
+# Absolute path to the backend directory (two levels up from this file)
+_BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 
 class Settings(BaseSettings):
     """
@@ -24,7 +27,7 @@ class Settings(BaseSettings):
     
     # ==================== VECTOR DATABASE (FAISS) ====================
     VECTOR_DB_TYPE: str = "faiss"
-    VECTOR_STORE_PATH: str = "./vector_store"
+    VECTOR_STORE_PATH: str = os.path.join(_BACKEND_DIR, "vector_store")
     
     # ==================== EMBEDDING MODEL ====================
     EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"
