@@ -21,6 +21,15 @@ def create_app() -> FastAPI:
         logger.info("Verifying SQL Database tables...")
         Base.metadata.create_all(bind=engine)
         logger.info("Database is ready.")
+        # Pre-load the vector store singleton at startup so the large
+        # 234 MB JSON index is parsed once, not on the first request.
+        logger.info("Pre-loading vector store index (this may take a moment)...")
+        try:
+            from app.rag.vectorstore import get_vector_store
+            vs = get_vector_store()
+            logger.info(f"Vector store ready — {len(vs.documents)} documents loaded.")
+        except Exception as e:
+            logger.warning(f"Vector store pre-load failed (will retry on first query): {e}")
 
     app.add_middleware(
         CORSMiddleware,
