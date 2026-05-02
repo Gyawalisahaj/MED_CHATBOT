@@ -80,6 +80,13 @@ class SimpleVectorStore:
         return [self.documents[i] for i in top_indices]
 
 
-def get_vector_store():
-    """Returns singleton vector store instance."""
-    return SimpleVectorStore()
+# Module-level singleton — load the 234 MB index only once at startup.
+_vector_store_instance: Optional[SimpleVectorStore] = None
+
+
+def get_vector_store() -> SimpleVectorStore:
+    """Return the singleton vector store, initialising it on first call."""
+    global _vector_store_instance
+    if _vector_store_instance is None:
+        _vector_store_instance = SimpleVectorStore()
+    return _vector_store_instance
