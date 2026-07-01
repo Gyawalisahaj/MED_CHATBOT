@@ -391,7 +391,8 @@ if final_query:
                 # Save to History
                 st.session_state.chat_history.append({
                     "user": final_query,
-                    "assistant": answer
+                    "assistant": answer,
+                    "sources": sources
                 })
                 
                 # Rerun to clear the voice input and show the new history
