@@ -5,6 +5,7 @@ Handles query processing, history retrieval, and session management.
 from fastapi import APIRouter, HTTPException, Query
 from typing import List
 from sqlalchemy import desc
+from contextlib import contextmanager
 
 from app.schemas.chat import ChatRequest, ChatResponse, ChatHistoryItem
 from app.services.chat_service import process_chat_message
@@ -15,6 +16,14 @@ from app.models.history import ChatHistory
 logger = get_logger("chat_api")
 
 router = APIRouter()
+
+@contextmanager
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 
 @router.post("/query", response_model=ChatResponse)
@@ -50,24 +59,22 @@ async def get_chat_history(session_id: str):
         List of chat interactions sorted by timestamp
     """
     try:
-        db = SessionLocal()
-        history = db.query(ChatHistory).filter(
-            ChatHistory.session_id == session_id
-        ).order_by(desc(ChatHistory.timestamp)).all()
-        
-        db.close()
-        
-        return [
-            ChatHistoryItem(
-                id=h.id,
-                session_id=h.session_id,
-                message=h.message,
-                response=h.response,
-                sources=h.sources.split("|") if h.sources else [],
-                timestamp=h.timestamp
-            )
-            for h in history
-        ]
+        with get_db() as db:
+            history = db.query(ChatHistory).filter(
+                ChatHistory.session_id == session_id
+            ).order_by(desc(ChatHistory.timestamp)).all()
+            
+            return [
+                ChatHistoryItem(
+                    id=h.id,
+                    session_id=h.session_id,
+                    message=h.message,
+                    response=h.response,
+                    sources=h.sources.split("|") if h.sources else [],
+                    timestamp=h.timestamp
+                )
+                for h in history
+            ]
     except Exception as e:
         logger.exception(f"History retrieval error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -85,12 +92,11 @@ async def clear_chat_history(session_id: str):
         Success message
     """
     try:
-        db = SessionLocal()
-        db.query(ChatHistory).filter(
-            ChatHistory.session_id == session_id
-        ).delete()
-        db.commit()
-        db.close()
+        with get_db() as db:
+            db.query(ChatHistory).filter(
+                ChatHistory.session_id == session_id
+            ).delete()
+            db.commit()
         
         logger.info(f"🗑️ Cleared history for session: {session_id}")
         return {"message": f"History cleared for session {session_id}"}
