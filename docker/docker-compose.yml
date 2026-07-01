@@ -8,7 +8,6 @@ services:
       - "8000:8000"
     environment:
       - PYTHONUNBUFFERED=1
-      - VECTOR_DB_TYPE=faiss
     volumes:
       - ../Document:/app/Document
       - ../backend:/app/app
