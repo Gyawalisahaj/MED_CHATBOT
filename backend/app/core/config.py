@@ -25,8 +25,7 @@ class Settings(BaseSettings):
     GROQ_API_KEY: str = ""  # Required: https://console.groq.com/
     LLM_MODEL: str = "llama-3.3-70b-versatile"
     
-    # ==================== VECTOR DATABASE (FAISS) ====================
-    VECTOR_DB_TYPE: str = "faiss"
+    # ==================== VECTOR DATABASE ====================
     VECTOR_STORE_PATH: str = os.path.join(_BACKEND_DIR, "vector_store")
     
     # ==================== EMBEDDING MODEL ====================
