@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.chat import router as chat_router
@@ -8,28 +9,49 @@ from app.models.history import ChatHistory
 
 logger = get_logger("main")
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("Verifying SQL Database tables...")
+    Base.metadata.create_all(bind=engine)
+    logger.info("Database is ready.")
+    
+    logger.info("Pre-loading vector store index (this may take a moment)...")
+    try:
+        from app.rag.vectorstore import get_vector_store
+        vs = get_vector_store()
+        logger.info(f"Vector store ready — {len(vs.documents)} documents loaded.")
+        
+        # Issue 7: On-demand indexing moved to startup to avoid blocking live requests
+        if len(vs.documents) == 0:
+            logger.info("Vector store index is empty. Running initial PDF ingestion...")
+            try:
+                from app.rag.loader import load_medical_documents
+                from app.rag.vectorstore import SimpleDocument
+                loaded_docs = load_medical_documents(settings.PDF_FOLDER)
+                if loaded_docs:
+                    vs.add_documents([
+                        SimpleDocument(page_content=doc.page_content, metadata=doc.metadata)
+                        for doc in loaded_docs
+                    ])
+                    logger.info(f"Successfully loaded and indexed {len(loaded_docs)} documents on startup.")
+                else:
+                    logger.warning("No PDF documents found to index during startup.")
+            except Exception as load_error:
+                logger.error(f"Failed to auto-load documents on startup: {str(load_error)}")
+    except Exception as e:
+        logger.warning(f"Vector store pre-load failed: {e}")
+    
+    yield
+
+
 def create_app() -> FastAPI:
     app = FastAPI(
         title=settings.PROJECT_NAME,
         version="1.0.0",
-        description="Medical RAG Chatbot powered by Intel VDMS"
+        description="Medical RAG Chatbot powered by Intel VDMS",
+        lifespan=lifespan
     )
-
-
-    @app.on_event("startup")
-    def on_startup():
-        logger.info("Verifying SQL Database tables...")
-        Base.metadata.create_all(bind=engine)
-        logger.info("Database is ready.")
-        # Pre-load the vector store singleton at startup so the large
-        # 234 MB JSON index is parsed once, not on the first request.
-        logger.info("Pre-loading vector store index (this may take a moment)...")
-        try:
-            from app.rag.vectorstore import get_vector_store
-            vs = get_vector_store()
-            logger.info(f"Vector store ready — {len(vs.documents)} documents loaded.")
-        except Exception as e:
-            logger.warning(f"Vector store pre-load failed (will retry on first query): {e}")
 
     app.add_middleware(
         CORSMiddleware,
