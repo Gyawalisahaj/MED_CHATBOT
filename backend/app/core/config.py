@@ -4,7 +4,7 @@ Loads environment variables from .env files.
 """
 import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Extra
+
 
 # Absolute path to the backend directory (two levels up from this file)
 _BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     
     # ==================== GROQ API ====================
-    GROQ_API_KEY: str  # Required: https://console.groq.com/
+    GROQ_API_KEY: str = ""  # Required: https://console.groq.com/
     LLM_MODEL: str = "llama-3.3-70b-versatile"
     
     # ==================== VECTOR DATABASE (FAISS) ====================
@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     
     # ==================== EMBEDDING MODEL ====================
     EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"
-    EMBEDDING_DEVICE: str = "cuda"  # Can be 'cpu' or 'cuda'
+    EMBEDDING_DEVICE: str = "cpu"  # Can be 'cpu' or 'cuda'
     
     # ==================== RAG PARAMETERS ====================
     TOP_K: int = 7           # Number of documents to retrieve
@@ -59,7 +59,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="MEDICAL_CHATBOT_",env_file=os.path.join(_BACKEND_DIR, ".env"),
         env_file_encoding='utf-8',
-        extra=Extra.allow,
+        extra="allow",
         case_sensitive=False
     )
 
