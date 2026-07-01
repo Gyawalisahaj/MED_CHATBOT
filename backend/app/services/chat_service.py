@@ -82,24 +82,12 @@ async def process_chat_message(request: ChatRequest) -> ChatResponse:
         save_chat_history(request.session_id, request.message, cached_answer, ["Cached"])
         return response
 
+    is_success = True
     try:
         from app.rag.vectorstore import get_vector_store, SimpleDocument
         from app.rag.chain import get_rag_chain
 
         vectorstore = get_vector_store()
-
-        if len(vectorstore.documents) == 0:
-            try:
-                from app.rag.loader import load_medical_documents
-                loaded_docs = load_medical_documents(settings.PDF_FOLDER)
-                if loaded_docs:
-                    vectorstore.add_documents([
-                        SimpleDocument(page_content=doc.page_content, metadata=doc.metadata)
-                        for doc in loaded_docs
-                    ])
-                    logger.info(f"Loaded and indexed {len(loaded_docs)} documents")
-            except Exception as load_error:
-                logger.warning(f"Could not auto-load documents: {str(load_error)}")
 
         docs = vectorstore.similarity_search(request.message, k=settings.TOP_K)
         logger.info(f"Retrieved {len(docs)} relevant documents")
@@ -116,6 +104,7 @@ async def process_chat_message(request: ChatRequest) -> ChatResponse:
         logger.info("✅ RAG pipeline completed successfully")
 
     except Exception as e:
+        is_success = False
         logger.error(f"RAG pipeline failed: {str(e)}. Falling back to direct answer.")
         try:
             from app.rag.chain import get_rag_chain
@@ -128,7 +117,8 @@ async def process_chat_message(request: ChatRequest) -> ChatResponse:
             answer = "I apologize, but I'm currently unable to access the medical knowledge base. Please try again later."
             sources = ["Error: Knowledge base unavailable"]
 
-    save_to_cache(normalized_question, answer)
+    if is_success:
+        save_to_cache(normalized_question, answer)
     save_chat_history(request.session_id, request.message, answer, sources)
 
     response = ChatResponse(
