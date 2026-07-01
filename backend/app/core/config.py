@@ -50,13 +50,14 @@ class Settings(BaseSettings):
     CORS_ORIGINS: list = ["*"]
     
     # ==================== PDF INGESTION ====================
-    PDF_FOLDER: str = "/home/sahajgyawali45/abc/chatbot/Document"
+    PDF_FOLDER: str = os.path.join(_BACKEND_DIR, "Document")
+    PDF_EXTENSIONS: list = [".pdf"]
     CHUNK_SIZE: int = 700
     CHUNK_OVERLAP: int = 120
     
     # Pydantic V2 config
     model_config = SettingsConfigDict(
-        env_file="/home/sahajgyawali45/abc/chatbot/.env",
+        env_prefix="MEDICAL_CHATBOT_",env_file=os.path.join(_BACKEND_DIR, ".env"),
         env_file_encoding='utf-8',
         extra=Extra.allow,
         case_sensitive=False
