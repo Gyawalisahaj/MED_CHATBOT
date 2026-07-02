@@ -26,7 +26,10 @@ def get_rag_chain():
             "You are a medical AI assistant. Answer the user's question based on the provided context. "
             "If the context does not contain the answer, say you don't know rather than inventing facts. "
             "Use citations from the context when available.\n\n"
-            f"{context}Question: {query}\n\nAnswer:"
+            "CRITICAL FORMATTING RULES:\n"
+            "1. Do NOT include raw file names, PDF titles, or page numbers anywhere in your written text response (e.g., avoid writing '(Guyton.pdf, Page 970)').\n"
+            "2. Write your response in smooth, natural, and conversational paragraphs.\n"
+            f"\n\nContext:\n{context}\n\nQuestion: {query}\nAnswer:"
         )
 
         headers = {
