@@ -1,92 +1,29 @@
-"""
-PDF Ingestion Script - Simple implementation
-Loads PDFs and creates vector store for RAG
-"""
-
 import os
 import sys
 from pathlib import Path
+from typing import List
 
-# Add backend to path
-backend_path = Path(__file__).parent.parent / "backend"
-sys.path.insert(0, str(backend_path))
+# 1. FIX: Add the 'backend' directory to sys.path so Python can find 'app'
+root_path = Path(__file__).resolve().parent.parent
+backend_path = root_path / "backend"
 
-from app.rag.vectorstore import get_vector_store, SimpleDocument
-from app.rag.embeddings import get_embeddings_model
+if str(backend_path) not in sys.path:
+    sys.path.insert(0, str(backend_path))
+
+# 2. FIX: Import directly from 'app' (matching your internal backend files)
 from app.core.config import settings
+from app.utils.logger import get_logger
+from app.db.session import SessionLocal
+from app.models.history import DocumentMetadata
 
-def load_pdf_documents(pdf_folder: str) -> list:
-    """Load documents from PDF files"""
-    documents = []
-
-    try:
-        from pypdf import PdfReader
-    except ImportError:
-        print("pypdf not installed. Install with: pip install pypdf")
-        return documents
-
-    pdf_path = Path(pdf_folder)
-    if not pdf_path.exists():
-        print(f"PDF folder not found: {pdf_folder}")
-        return documents
-
-    for pdf_file in pdf_path.glob("*.pdf"):
-        print(f"Processing {pdf_file.name}...")
-        try:
-            reader = PdfReader(str(pdf_file))
-            for page_num, page in enumerate(reader.pages):
-                text = page.extract_text()
-                if text.strip():  # Only add non-empty pages
-                    doc = SimpleDocument(
-                        page_content=text,
-                        metadata={
-                            "source": pdf_file.name,
-                            "page": page_num + 1,
-                            "file_path": str(pdf_file)
-                        }
-                    )
-                    documents.append(doc)
-            print(f"  Loaded {len(reader.pages)} pages from {pdf_file.name}")
-        except Exception as e:
-            print(f"  Error processing {pdf_file.name}: {e}")
-
-    return documents
-
-def main():
-    print("🩺 Medical RAG Document Ingestion")
-    print("=" * 40)
-
-    # Get vector store
-    vectorstore = get_vector_store()
-    embeddings_model = get_embeddings_model()
-
-    # Load documents
-    pdf_folder = settings.PDF_FOLDER or "./Document"
-    print(f"Loading PDFs from: {pdf_folder}")
-
-    documents = load_pdf_documents(pdf_folder)
-
-    if not documents:
-        print("❌ No documents loaded. Check PDF folder and pypdf installation.")
-        return
-
-    print(f"📄 Loaded {len(documents)} document chunks")
-
-    # Add to vector store
-    print("🔄 Adding documents to vector store...")
-    vectorstore.add_documents(documents)
-
-    print("✅ Ingestion complete!")
-    print(f"📊 Total documents in store: {len(vectorstore.documents)}")
-
-if __name__ == "__main__":
-    main()
-from backend.app.utils.logger import get_logger
-from backend.app.db.session import SessionLocal
-from backend.app.models.history import DocumentMetadata
+# 3. Third-party LangChain imports
+from langchain_community.document_loaders import PyPDFLoader
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.vectorstores import FAISS
+from langchain_core.documents import Document
 
 logger = get_logger("ingest_doc")
-
 
 class MedicalPDFIngester:
     """
@@ -94,17 +31,23 @@ class MedicalPDFIngester:
     """
     
     def __init__(self):
-        self.pdf_folder = settings.PDF_FOLDER
-        self.chunk_size = settings.CHUNK_SIZE
-        self.chunk_overlap = settings.CHUNK_OVERLAP
+        # Fallback to relative paths if settings variables are unassigned
+        self.pdf_folder = settings.PDF_FOLDER or "./Document"
+        self.chunk_size = getattr(settings, "CHUNK_SIZE", 500)
+        self.chunk_overlap = getattr(settings, "CHUNK_OVERLAP", 50)
+        
+        embedding_model = getattr(settings, "EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
+        embedding_device = getattr(settings, "EMBEDDING_DEVICE", "cpu")
+        
         self.embeddings = HuggingFaceEmbeddings(
-            model_name=settings.EMBEDDING_MODEL,
-            model_kwargs={"device": settings.EMBEDDING_DEVICE}
+            model_name=embedding_model,
+            model_kwargs={"device": embedding_device}
         )
         self.vectorstore = None
-        self.total_chunks = 0
         self.db = SessionLocal()
-        self.vector_store_path = "./vector_store/faiss_index"
+        
+        # FIX: Point directly to backend/vector_store as indicated in your folder tree
+        self.vector_store_path = str(root_path / "backend" / "vector_store" / "faiss_index")
     
     def load_pdfs(self) -> List[Document]:
         """
@@ -127,7 +70,7 @@ class MedicalPDFIngester:
                 loader = PyPDFLoader(str(pdf_path))
                 docs = loader.load()
                 
-                # Add source metadata
+                # Add source metadata details cleanly
                 for doc in docs:
                     doc.metadata["source"] = pdf_path.name
                     doc.metadata["source_path"] = str(pdf_path)
@@ -194,36 +137,36 @@ class MedicalPDFIngester:
         
         logger.info(f"✨ All {len(chunks)} chunks successfully indexed!")
         
-        # Save the index
+        # Save the index locally to disk
         if self.vectorstore is not None:
             os.makedirs(os.path.dirname(self.vector_store_path), exist_ok=True)
             self.vectorstore.save_local(self.vector_store_path)
             logger.info(f"💾 FAISS index saved to {self.vector_store_path}")
     
-    def save_metadata(self, documents: List[Document]) -> None:
+    def save_metadata(self, documents: List[Document], chunks: List[Document]) -> None:
         """
         Save document metadata to SQLite for tracking and analytics.
         """
         logger.info("💾 Saving document metadata to database...")
         
         try:
-            # Group documents by source
             sources = {}
+            
+            # Count total pages from raw documents
             for doc in documents:
                 source = doc.metadata.get("source", "unknown")
                 if source not in sources:
-                    sources[source] = {
-                        "pages": 0,
-                        "chunks": 0,
-                        "path": doc.metadata.get("source_path", "")
-                    }
-                sources[source]["pages"] = max(
-                    sources[source]["pages"],
-                    doc.metadata.get("page", 0) + 1
-                )
-                sources[source]["chunks"] += 1
+                    sources[source] = {"pages": 0, "chunks": 0, "path": doc.metadata.get("source_path", "")}
+                # page is 0-indexed from PyPDFLoader, add 1 for max page number count
+                sources[source]["pages"] = max(sources[source]["pages"], doc.metadata.get("page", 0) + 1)
             
-            # Store in database
+            # Count total chunks generated from splitting
+            for chunk in chunks:
+                source = chunk.metadata.get("source", "unknown")
+                if source in sources:
+                    sources[source]["chunks"] += 1
+            
+            # Sync metadata profiles to database
             for filename, info in sources.items():
                 existing = self.db.query(DocumentMetadata).filter(
                     DocumentMetadata.filename == filename
@@ -250,7 +193,7 @@ class MedicalPDFIngester:
         finally:
             self.db.close()
     
-    def run(self):
+    def run(self) -> bool:
         """
         Execute the complete ingestion pipeline.
         """
@@ -265,14 +208,17 @@ class MedicalPDFIngester:
                 logger.error("No documents loaded. Exiting.")
                 return False
             
-            # 2. Split documents
+            # 2. Split documents into chunks
             chunks = self.split_documents(documents)
+            if not chunks:
+                logger.error("Splitting resulted in 0 text chunks. Exiting.")
+                return False
             
-            # 3. Ingest to FAISS
+            # 3. Ingest chunks into FAISS vector database
             self.ingest_to_faiss(chunks)
             
-            # 4. Save metadata
-            self.save_metadata(documents)
+            # 4. Save metadata records to SQLite
+            self.save_metadata(documents, chunks)
             
             logger.info("=" * 60)
             logger.info("✨ INGESTION COMPLETE!")
@@ -287,14 +233,11 @@ class MedicalPDFIngester:
             logger.error(f"❌ Ingestion failed: {str(e)}")
             return False
 
-
 def main():
     """Main entry point."""
     ingester = MedicalPDFIngester()
     success = ingester.run()
     sys.exit(0 if success else 1)
 
-
 if __name__ == "__main__":
     main()
-
