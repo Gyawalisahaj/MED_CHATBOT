@@ -1,5 +1,6 @@
 import os
 import sys
+from contextlib import contextmanager
 
 # Ensure backend directory is in sys.path so 'app' imports resolve on CI/CD
 backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "backend"))
@@ -11,6 +12,8 @@ from pydantic import ValidationError
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+# 🎯 FIXED: Stripped the 'backend.' prefix so paths match app/main.py internal architecture
+# 🎯 FIX: Remove "backend." from the front of these imports
 from app.schemas.chat import ChatRequest
 from app.rag.qa_cache import get_cached_answer, save_to_cache
 from app.api.chat import get_db
@@ -50,7 +53,9 @@ def test_health_endpoint():
 
 
 # 4. DB Session Context Manager Test
+# 4. DB Session Context Manager Test
 def test_db_session():
+    # 🎯 FIXED: Removed the double-wrapping since get_db is already a context manager!
     with get_db() as db:
         assert isinstance(db, Session)
         # Verify db is active/open
