@@ -2,13 +2,15 @@
 Configuration management using Pydantic Settings.
 Loads environment variables from .env files.
 """
+from pathlib import Path
 import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+_CURRENT_FILE = Path(__file__).resolve()
 
-# Absolute path to the backend directory (two levels up from this file)
-_BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
+# 🎯 FIX: Split these back into two separate lines
+_BACKEND_DIR = _CURRENT_FILE.parent.parent.parent
+_ROOT_DIR = _BACKEND_DIR.parent
 
 class Settings(BaseSettings):
     """
@@ -26,7 +28,7 @@ class Settings(BaseSettings):
     LLM_MODEL: str = "llama-3.3-70b-versatile"
     
     # ==================== VECTOR DATABASE ====================
-    VECTOR_STORE_PATH: str = os.path.join(_BACKEND_DIR, "vector_store")
+    VECTOR_STORE_PATH: str = str(_BACKEND_DIR / "vector_store" / "faiss_index")
     
     # ==================== EMBEDDING MODEL ====================
     EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"
@@ -38,7 +40,7 @@ class Settings(BaseSettings):
     MAX_RETRIES: int = 3
     
     # ==================== DATABASE ====================
-    DATABASE_URL: str = "sqlite:///./medical_chatbot.db"
+    DATABASE_URL: str = f"sqlite:///{_BACKEND_DIR / 'medical_chatbot.db'}"
     
     # ==================== CACHE ====================
     CACHE_TTL: int = 3600  # Cache time-to-live in seconds
@@ -49,14 +51,15 @@ class Settings(BaseSettings):
     CORS_ORIGINS: list = ["*"]
     
     # ==================== PDF INGESTION ====================
-    PDF_FOLDER: str = os.path.join(_BACKEND_DIR, "Document")
+    PDF_FOLDER: str = str(_ROOT_DIR / "Document")
     PDF_EXTENSIONS: list = [".pdf"]
     CHUNK_SIZE: int = 700
     CHUNK_OVERLAP: int = 120
     
     # Pydantic V2 config
     model_config = SettingsConfigDict(
-        env_prefix="MEDICAL_CHATBOT_",env_file=os.path.join(_BACKEND_DIR, ".env"),
+        # env_prefix="MEDICAL_CHATBOT_",
+        env_file=os.path.join(_BACKEND_DIR, ".env"),
         env_file_encoding='utf-8',
         extra="allow",
         case_sensitive=False
