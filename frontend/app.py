@@ -253,11 +253,11 @@ with st.sidebar:
     
     st.divider()
     
-    st.markdown("### ⚠️ Disclaimer")
-    st.warning(
-        "**Educational Use Only**: This tool is for learning purposes. "
-        "Always consult qualified healthcare professionals for medical advice."
-    )
+    # st.markdown("### ⚠️ Disclaimer")
+    # st.warning(
+    #     "**Educational Use Only**: This tool is for learning purposes. "
+    #     "Always consult qualified healthcare professionals for medical advice."
+    # )
 
 # ============================================================================
 # MAIN CONTENT
@@ -372,14 +372,14 @@ with footer_col3:
         unsafe_allow_html=True
     )
 
-st.markdown(
-    """
-    <div class='disclaimer'>
-        <b>⚠️ Important Disclaimer:</b><br>
-        This application is for educational purposes only. Information provided 
-        is not a substitute for professional medical advice. Always consult qualified 
-        healthcare professionals for medical decisions.
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+# st.markdown(
+#     """
+#     <div class='disclaimer'>
+#         <b>⚠️ Important Disclaimer:</b><br>
+#         This application is for educational purposes only. Information provided 
+#         is not a substitute for professional medical advice. Always consult qualified 
+#         healthcare professionals for medical decisions.
+#     </div>
+#     """,
+#     unsafe_allow_html=True
+# )
