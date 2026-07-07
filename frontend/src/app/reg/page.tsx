@@ -1,0 +1,215 @@
+'use client'
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { Eye, EyeOff, Stethoscope, AlertCircle, User, Mail, Lock } from 'lucide-react'
+import { useAuth } from '@/context/AuthContext'
+import { authApi, getErrorMessage } from '@/lib/api'
+import Input from '@/components/ui/Input'
+import Button from '@/components/ui/Button'
+import PasswordStrengthMeter from '@/components/ui/PasswordStrengthMeter'
+
+export default function RegisterPage() {
+    const { login, isAuthenticated } = useAuth()
+    const router = useRouter()
+
+    const [form, setForm] = useState({
+        full_name: '',
+        username: '',
+        email: '',
+        password: '',
+        confirm: '',
+    })
+    const [showPw, setShowPw] = useState(false)
+    const [showCf, setShowCf] = useState(false)
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState('')
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+
+    useEffect(() => { if (isAuthenticated) router.replace('/chat') }, [isAuthenticated, router])
+
+    const set = (key: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
+        setForm((f) => ({ ...f, [key]: e.target.value }))
+        setFieldErrors((fe) => ({ ...fe, [key]: '' }))
+        setError('')
+    }
+
+    const validate = (): boolean => {
+        const errs: Record<string, string> = {}
+        if (!form.username.trim()) errs.username = 'Username is required.'
+        else if (form.username.length < 3) errs.username = 'At least 3 characters.'
+        else if (!/^[a-zA-Z0-9_]+$/.test(form.username)) errs.username = 'Letters, numbers, underscores only.'
+        if (!form.email.trim()) errs.email = 'Email is required.'
+        else if (!/\S+@\S+\.\S+/.test(form.email)) errs.email = 'Enter a valid email.'
+        if (!form.password) errs.password = 'Password is required.'
+        if (form.password && form.confirm !== form.password) errs.confirm = 'Passwords do not match.'
+        setFieldErrors(errs)
+        return Object.keys(errs).length === 0
+    }
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setError('')
+        if (!validate()) return
+        setLoading(true)
+        try {
+            const payload: Record<string, string> = {
+                username: form.username.trim(),
+                email: form.email.trim(),
+                password: form.password,
+            }
+            if (form.full_name.trim()) payload.full_name = form.full_name.trim()
+            const { data } = await authApi.register(payload as Parameters<typeof authApi.register>[0])
+            login(data)
+            router.push('/chat')
+        } catch (err) {
+            setError(getErrorMessage(err))
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleGoogle = () => {
+        const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
+        if (!clientId) { setError('Google Sign-In is not configured.'); return }
+        const params = new URLSearchParams({
+            client_id: clientId,
+            redirect_uri: window.location.origin + '/auth/google/callback',
+            response_type: 'id_token',
+            scope: 'openid email profile',
+            nonce: Math.random().toString(36).slice(2),
+        })
+        window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params}`
+    }
+
+    return (
+        <div className="min-h-screen bg-surface flex items-center justify-center p-4">
+            <div className="fixed inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] rounded-full bg-teal/5 blur-3xl" />
+                <div className="absolute bottom-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full bg-teal/3 blur-3xl" />
+            </div>
+
+            <div className="relative w-full max-w-md animate-slide-up">
+                {/* Logo */}
+                <div className="text-center mb-8">
+                    <div className="inline-flex items-center gap-2 mb-3">
+                        <div className="w-9 h-9 rounded-xl bg-teal/20 flex items-center justify-center">
+                            <Stethoscope size={20} className="text-teal" />
+                        </div>
+                        <span className="text-xl font-semibold text-ink">MediQuery AI</span>
+                    </div>
+                    <h1 className="text-2xl font-semibold text-ink">Create your account</h1>
+                    <p className="text-sm text-muted mt-1">Get started with medical AI assistance</p>
+                </div>
+
+                <div className="bg-card border border-border rounded-2xl p-7 shadow-2xl shadow-black/40">
+                    {/* Google */}
+                    <button
+                        onClick={handleGoogle}
+                        className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-lg
+                       border border-border bg-sidebar hover:bg-sidebar-hover text-sm font-medium
+                       text-ink transition-colors duration-150 mb-5"
+                    >
+                        <svg width="18" height="18" viewBox="0 0 48 48">
+                            <path fill="#FFC107" d="M43.6 20H24v8h11.3C33.7 33.1 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.7 1.1 7.8 2.9l5.7-5.7C34 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11.1 0 20-8.9 20-20 0-1.3-.1-2.7-.4-4z" />
+                            <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 16 19 13 24 13c3 0 5.7 1.1 7.8 2.9l5.7-5.7C34 6.5 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
+                            <path fill="#4CAF50" d="M24 44c5.2 0 9.9-1.9 13.5-5l-6.2-5.2C29.4 35.5 26.8 36 24 36c-5.2 0-9.7-3-11.7-7.5l-6.5 5C9.5 40.4 16.2 44 24 44z" />
+                            <path fill="#1976D2" d="M43.6 20H24v8h11.3c-.9 2.5-2.6 4.6-4.8 6l6.2 5.2C40.3 35.9 44 30.4 44 24c0-1.3-.1-2.7-.4-4z" />
+                        </svg>
+                        Sign up with Google
+                    </button>
+
+                    <div className="flex items-center gap-3 mb-5">
+                        <div className="flex-1 h-px bg-border" />
+                        <span className="text-xs text-muted">or fill in the form</span>
+                        <div className="flex-1 h-px bg-border" />
+                    </div>
+
+                    {error && (
+                        <div className="mb-4 flex gap-2 items-start p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                            <AlertCircle size={16} className="text-red-400 flex-shrink-0 mt-0.5" />
+                            <p className="text-sm text-red-300 whitespace-pre-line">{error}</p>
+                        </div>
+                    )}
+
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <Input
+                            label="Full name (optional)"
+                            type="text"
+                            placeholder="Dr. Gyawali"
+                            value={form.full_name}
+                            onChange={set('full_name')}
+                            leftIcon={<User size={15} />}
+                        />
+                        <Input
+                            label="Username *"
+                            type="text"
+                            placeholder="drgyawali"
+                            value={form.username}
+                            onChange={set('username')}
+                            error={fieldErrors.username}
+                            hint="3–50 chars · letters, numbers, underscores"
+                            leftIcon={<span className="text-xs font-mono text-muted">@</span>}
+                        />
+                        <Input
+                            label="Email *"
+                            type="email"
+                            placeholder="doctor@hospital.com"
+                            value={form.email}
+                            onChange={set('email')}
+                            error={fieldErrors.email}
+                            leftIcon={<Mail size={15} />}
+                        />
+                        <div>
+                            <Input
+                                label="Password *"
+                                type={showPw ? 'text' : 'password'}
+                                placeholder="Create a strong password"
+                                value={form.password}
+                                onChange={set('password')}
+                                error={fieldErrors.password}
+                                autoComplete="new-password"
+                                leftIcon={<Lock size={15} />}
+                                rightIcon={
+                                    <button type="button" onClick={() => setShowPw(!showPw)} className="hover:text-ink transition-colors">
+                                        {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                                    </button>
+                                }
+                            />
+                            <PasswordStrengthMeter password={form.password} />
+                        </div>
+                        <Input
+                            label="Confirm password *"
+                            type={showCf ? 'text' : 'password'}
+                            placeholder="Repeat your password"
+                            value={form.confirm}
+                            onChange={set('confirm')}
+                            error={fieldErrors.confirm}
+                            autoComplete="new-password"
+                            leftIcon={<Lock size={15} />}
+                            rightIcon={
+                                <button type="button" onClick={() => setShowCf(!showCf)} className="hover:text-ink transition-colors">
+                                    {showCf ? <EyeOff size={16} /> : <Eye size={16} />}
+                                </button>
+                            }
+                        />
+                        <Button type="submit" fullWidth loading={loading} className="mt-2">
+                            Create account
+                        </Button>
+                    </form>
+
+                    <p className="mt-5 text-center text-sm text-muted">
+                        Already have an account?{' '}
+                        <Link href="/login" className="text-teal hover:text-teal-hover font-medium">
+                            Sign in
+                        </Link>
+                    </p>
+                </div>
+
+                <p className="text-center text-xs text-muted mt-5">
+                    ⚠️ Educational use only. Not a substitute for professional medical advice.
+                </p>
+            </div>
+        </div>
+    )
+}
