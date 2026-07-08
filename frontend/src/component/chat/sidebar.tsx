@@ -1,8 +1,8 @@
 'use client'
 import { useState } from 'react'
 import { Plus, MessageSquare, Trash2, Pencil, Stethoscope, LogOut, ChevronLeft, ChevronRight, Check, X } from 'lucide-react'
-import { useAuth } from '@/context/AuthContext'
-import { useConversations } from '@/context/ConversationContext'
+import { useAuth } from '@/context/authcontext'
+import { useConversations } from '@/context/conversationcontext'
 import { chatApi } from '@/lib/api'
 import { clsx } from 'clsx'
 
