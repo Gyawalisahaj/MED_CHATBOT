@@ -3,11 +3,11 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Eye, EyeOff, Stethoscope, AlertCircle, User, Mail, Lock } from 'lucide-react'
-import { useAuth } from '@/context/AuthContext'
+import { useAuth } from '@/context/authcontext'
 import { authApi, getErrorMessage } from '@/lib/api'
-import Input from '@/components/ui/Input'
-import Button from '@/components/ui/Button'
-import PasswordStrengthMeter from '@/components/ui/PasswordStrengthMeter'
+import Input from '@/component/ui/input'
+import Button from '@/component/ui/button'
+import PasswordStrengthMeter from '@/component/ui/passwordstrength'
 
 export default function RegisterPage() {
     const { login, isAuthenticated } = useAuth()
