@@ -6,6 +6,14 @@ from app.core.config import settings
 from app.utils.logger import get_logger
 from app.db.session import engine, Base 
 from app.models.history import ChatHistory 
+# backend/app/main.py — add these 2 lines
+
+from app.api.auth import router as auth_router        # ADD
+from app.db.postgres_session import pg_engine, AuthBase  # ADD
+from app.models.users import User                     # ADD  (registers table)
+
+# inside create_app(), after the chat router line:
+app.include_router(auth_router, prefix="/api/v1/auth", tags=["Auth"])  # ADD
 
 logger = get_logger("main")
 
