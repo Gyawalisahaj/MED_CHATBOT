@@ -2,6 +2,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+# pyrefly: ignore [missing-import]
 from app.db.postgres_session import get_pg_db
 from app.schemas.auth import (
     RegisterRequest, LoginRequest, GoogleLoginRequest,
@@ -13,7 +14,9 @@ from app.services.auth_service import (
     refresh_access_token, change_password,
     get_current_user,
 )
-from app.models.user import User
+
+# pyrefly: ignore [missing-import]
+from app.models.users import User    
 from app.utils.logger import get_logger
 
 logger = get_logger("auth_api")
