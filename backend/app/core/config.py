@@ -42,6 +42,14 @@ class Settings(BaseSettings):
     # ==================== DATABASE ====================
     DATABASE_URL: str = f"sqlite:///{_BACKEND_DIR / 'medical_chatbot.db'}"
     
+    # ==================== AUTH ====================
+    POSTGRES_URL: str = "postgresql+psycopg2://meduser:yourpassword@localhost:5432/medchatbot"
+    JWT_SECRET_KEY: str = "changeme"
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    GOOGLE_CLIENT_ID: str = ""
+    
     # ==================== CACHE ====================
     CACHE_TTL: int = 3600  # Cache time-to-live in seconds
     ENABLE_CACHE: bool = True
