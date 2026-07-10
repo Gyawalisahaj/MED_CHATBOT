@@ -11,10 +11,10 @@ if str(backend_path) not in sys.path:
     sys.path.insert(0, str(backend_path))
 
 # 2. FIX: Import directly from 'app' (matching your internal backend files)
-from app.core.config import settings
-from app.utils.logger import get_logger
-from app.db.session import SessionLocal
-from app.models.history import DocumentMetadata
+from backend.app.core.config import settings
+from backend.app.utils.logger import get_logger
+from backend.app.db.session import SessionLocal
+from backend.app.models.history import DocumentMetadata
 
 # 3. Third-party LangChain imports
 from langchain_community.document_loaders import PyPDFLoader
