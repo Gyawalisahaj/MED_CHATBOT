@@ -1,0 +1,13 @@
+.git
+venv/
+.env
+.local.env
+vector_store/
+backend/vector_store/
+*.db
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.vscode/
