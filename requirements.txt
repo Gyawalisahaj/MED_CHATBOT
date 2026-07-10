@@ -1,26 +1,48 @@
-# Web Framework
+# ─────────────────────────────────────────────────────────────
+# MED_CHATBOT — Backend Requirements
+# Install: pip install -r requirements.txt
+# ─────────────────────────────────────────────────────────────
+
+# ── Web Framework ─────────────────────────────────────────────
 fastapi==0.104.1
 uvicorn==0.24.0
-pydantic>=2.0.0          # Updated to Pydantic v2
-pydantic-settings>=2.0.0 # Compatible with Pydantic v2
-python-dotenv==1.0.0
-python-multipart==0.0.6
+python-multipart==0.0.6          # required for file/form uploads in FastAPI
 
-# Database
+# ── Data Validation & Settings ────────────────────────────────
+pydantic==2.7.1
+pydantic-settings==2.3.1
+email-validator==2.1.1           # required for Pydantic EmailStr in auth schemas
+python-dotenv==1.0.0
+
+# ── Database — SQLite (chat history) ─────────────────────────
 sqlalchemy==2.0.23
 
-# LLM & Embeddings
+# ── Database — PostgreSQL (auth / users) ─────────────────────
+psycopg2-binary==2.9.9           # PostgreSQL driver
+
+# ── Auth — JWT + bcrypt ───────────────────────────────────────
+python-jose[cryptography]==3.3.0  # JWT encode/decode
+passlib[bcrypt]==1.7.4            # bcrypt password hashing
+
+# ── Google OAuth ──────────────────────────────────────────────
+google-auth==2.29.0              # Google ID-token server-side verification
+
+# ── LLM & Embeddings ─────────────────────────────────────────
 sentence-transformers==2.2.2
 huggingface-hub==0.19.4
-requests==2.31.0
+numpy==1.26.4                    # vector math in vectorstore.py
+requests==2.31.0                 # direct Groq REST calls in chain.py
 
-# Document processing
-pypdf==4.0.1
+# ── Document Processing ───────────────────────────────────────
+pypdf==4.0.1                     # PDF reading in ingest_doc.py
+langchain==0.1.20                # Document schema + loaders used in loader.py
+langchain-community==0.0.38      # PyPDFLoader, TextLoader
 
-# Frontend
-streamlit==1.29.0
+# ── Audio (optional — audio_service.py not wired in yet) ─────
+groq==0.8.0                      # Groq SDK for Whisper STT
+edge-tts==6.1.9                  # Microsoft TTS
 
-# Dev tools
+# ── Dev Tools ─────────────────────────────────────────────────
 pytest==7.4.3
 black==23.12.1
 flake8==6.1.0
