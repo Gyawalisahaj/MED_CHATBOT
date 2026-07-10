@@ -6,14 +6,13 @@ from app.core.config import settings
 from app.utils.logger import get_logger
 from app.db.session import engine, Base 
 from app.models.history import ChatHistory 
-# backend/app/main.py — add these 2 lines
 
-from app.api.auth import router as auth_router        # ADD
-from app.db.postgres_session import pg_engine, AuthBase  # ADD
-from app.models.users import User                     # ADD  (registers table)
+from app.api.auth import router as auth_router     
+from app.db.postgres_session import pg_engine, AuthBase  
+from app.models.users import User                    
 
-# inside create_app(), after the chat router line:
-app.include_router(auth_router, prefix="/api/v1/auth", tags=["Auth"])  # ADD
+
+# app.include_router(auth_router, prefix="/api/v1/auth", tags=["Auth"])  
 
 logger = get_logger("main")
 
@@ -22,6 +21,14 @@ logger = get_logger("main")
 async def lifespan(app: FastAPI):
     logger.info("Verifying SQL Database tables...")
     Base.metadata.create_all(bind=engine)
+    # inside lifespan(), after Base.metadata.create_all(bind=engine):
+    try:
+        AuthBase.metadata.create_all(bind=pg_engine)
+        logger.info("PostgreSQL auth tables ready.")
+    except Exception as pg_err:
+        logger.warning(f"PostgreSQL not available: {pg_err}")
+
+
     logger.info("Database is ready.")
     
     logger.info("Pre-loading vector store index (this may take a moment)...")
@@ -63,7 +70,7 @@ def create_app() -> FastAPI:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=["http://localhost:3000"],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -85,7 +92,10 @@ def create_app() -> FastAPI:
     return app
 
 # Initialize the application instance
+
 app = create_app()
+
+app.include_router(auth_router, prefix="/api/v1/auth", tags=["Auth"])  
 
 if __name__ == "__main__":
     import uvicorn
