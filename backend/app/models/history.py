@@ -1,6 +1,4 @@
-"""
-SQLAlchemy ORM models for storing chat history and metadata.
-"""
+
 from sqlalchemy import Column, Integer, String, Text, DateTime
 from datetime import datetime
 from app.db.session import Base
