@@ -25,7 +25,7 @@ Ask anything → it searches the books → answers with citations.
 | **Why** | Study smarter — get answers with page citations instead of Googling |
 | **How** | Your question → vector search in book chunks → Groq LLM generates answer |
 
-**Stack:** FastAPI (backend) · Streamlit (frontend) · Sentence Transformers (search) · Groq Llama 3.3-70b (LLM) · SQLite (history)
+**Stack:** FastAPI (backend) · Next.js (frontend) · Sentence Transformers (search) · Groq Llama 3.3-70b (LLM) · SQLite/PostgreSQL (DBs)
 
 ---
 
@@ -35,19 +35,22 @@ Ask anything → it searches the books → answers with citations.
 chatbot/
 ├── backend/               # FastAPI REST API
 │   ├── app/
-│   │   ├── api/           # Routes (chat, history, health)
-│   │   ├── core/          # Config & settings
-│   │   ├── db/            # SQLite session
+│   │   ├── api/           # Routes (chat, auth)
+│   │   ├── core/          # Config & security settings
+│   │   ├── db/            # SQLite (history) & PostgreSQL (auth)
 │   │   ├── models/        # DB models
 │   │   ├── rag/           # RAG pipeline (embeddings, vector store, LLM chain)
 │   │   ├── schemas/       # Pydantic request/response models
-│   │   ├── services/      # Business logic
+│   │   ├── services/      # Business logic (chat, auth)
 │   │   └── main.py        # App entry point
 │   └── vector_store/      # Saved vector index (auto-generated)
 │
-├── frontend/              # Streamlit chat UI
-│   ├── app.py             # Main UI
-│   └── style.css          # Custom styles
+├── frontend/              # Next.js Chat UI
+│   ├── src/
+│   │   ├── app/           # Next.js Pages (login, register, chat)
+│   │   ├── component/     # React Components (chat, ui)
+│   │   ├── context/       # Auth & Conversation State
+│   │   └── lib/           # API handlers
 │
 ├── docker/                # Docker setup
 │   ├── Dockerfile.backend
@@ -58,90 +61,81 @@ chatbot/
 │   └── ingest_doc.py      # Load PDFs into vector store
 │
 ├── Document/              # ← Put your medical PDFs here
-├── .env                   # API keys & config
+├── backend/.env           # Backend config
+├── frontend/.env          # Frontend config
 └── requirements.txt
 ```
 
 ---
 
-## 🚀 How to Start
+## 🚀 How to Start Locally
 
-### 1. Clone & setup
+### 1. Prerequisites
 
+- Python 3.11+
+- Node.js 18+ (for frontend)
+- PostgreSQL (for user authentication)
+
+### 2. Configure Environment Variables
+
+Edit `backend/.env` with your settings:
 ```bash
-git clone <repo-url>
-cd chatbot
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+GROQ_API_KEY=your_key_here
+POSTGRES_URL=postgresql+psycopg2://user:password@localhost:5432/medchatbot
 ```
 
-### 2. Add your Groq API key
-
-Edit `.env`:
-```bash
-GROQ_API_KEY=your_key_here   # Get free at https://console.groq.com/
-```
-
-### 3. Add medical PDFs & ingest
+### 3. Add Medical PDFs & Ingest
 
 Drop PDFs into the `Document/` folder, then run:
 ```bash
-python script/ingest_doc.py
-```
-
-### 4. Start the backend
-
-```bash
-PYTHONPATH=backend uvicorn backend.app.main:app --host 0.0.0.0 --port 8001
-```
-> First start takes ~10s to load the vector index. Wait for `Application startup complete.`
-
-### 5. Start the frontend (new terminal)
-
-```bash
+cd backend
+python -m venv venv
 source venv/bin/activate
-streamlit run frontend/app.py --server.port 8501
+pip install -r ../requirements.txt
+python ../script/ingest_doc.py
 ```
 
-### 6. Open in browser
+### 4. Start the Backend
 
-| | URL |
-|---|---|
-| 💬 Chat UI | http://localhost:8501 |
-| 📖 API Docs | http://localhost:8001/docs |
+```bash
+cd backend
+PYTHONPATH=. uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+### 5. Start the Frontend
+
+In a new terminal:
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### 6. Open in Browser
+
+- 💬 **Chat UI:** http://localhost:3000
+- 📖 **API Docs:** http://localhost:8000/docs
 
 ---
 
 ## 🐳 Docker (Alternative)
 
-```bash
-docker-compose -f docker/docker-compose.yml up -d
-```
-Starts both backend (`:8000`) and frontend (`:8501`) in containers.
-
----
-
-## ⚙️ Key Config (`.env`)
+To run the full stack via Docker without manually installing Node.js/Python:
 
 ```bash
-GROQ_API_KEY=...                    # Required
-LLM_MODEL=llama-3.3-70b-versatile  # Groq model
-EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
-TOP_K=7                             # Docs retrieved per query
-TEMPERATURE=0.0                     # 0 = deterministic answers
-DATABASE_URL=sqlite:///./medical_chatbot.db
+docker-compose -f docker/docker-compose.yml up -d --build
 ```
+This starts the backend on port `8000` and the frontend on port `3000`.
 
 ---
 
 ## 🛠 Troubleshooting
 
-**Backend offline in the UI?**
-Check the terminal where uvicorn is running. If it shows `Vector store ready — NNNNN documents loaded`, the backend is fine — update the Backend URL in the sidebar to `http://localhost:8001`.
+**Vector store index empty?**
+Ensure you have PDFs in the `Document` folder and have run the ingestion script. The app also attempts to auto-load documents on startup if the vector store is empty.
 
-**0 documents loaded?**
-Run `python script/ingest_doc.py` first to build the vector index.
+**Cannot log in or register?**
+Check that your PostgreSQL database is running and the credentials match the `POSTGRES_URL` in `backend/.env`.
 
-**Slow first response?**
-Normal — the model is loading. Subsequent queries are faster (caching enabled).
+**No response from Chat?**
+Ensure `GROQ_API_KEY` is properly set and you have internet access for the API.
