@@ -5,9 +5,9 @@ interface EmptyStateProps {
 }
 
 const suggestions = [
-  'Summarize the latest policies',
-  'What are the key takeaways from this document?',
-  'Show me the most relevant citations',
+  'What are the symptoms of Type 2 Diabetes?',
+  'Explain the pathophysiology of hypertension.',
+  'What is the standard treatment for pneumonia?',
 ]
 
 export default function EmptyState({ onSuggest }: EmptyStateProps) {
