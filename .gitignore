@@ -1,12 +1,20 @@
+# General
 .env
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 venv/
 .DS_Store
-data/raw_docs/*.pdf
-.local.env
-.local.env
-.local.env
-Document/*.pdf
+
+# Backend
 backend/vector_store/
 *.db
+data/raw_docs/*.pdf
+Document/*.pdf
+
+# Frontend
+frontend/.next/
+frontend/node_modules/
+frontend/out/
+frontend/build/
