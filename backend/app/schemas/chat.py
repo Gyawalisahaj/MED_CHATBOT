@@ -51,30 +51,4 @@ class ChatHistoryItem(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class SearchRequest(BaseModel):
-    """
-    Advanced medical search with structured fields.
-    """
-    query: str = Field(..., description="Main search query")
-    topic: Optional[str] = Field(None, description="Medical topic (e.g., cardiology)")
-    symptoms: Optional[List[str]] = Field(None, description="Symptoms to search for")
-    causes: Optional[bool] = Field(False, description="Include causes in search")
-    treatment: Optional[bool] = Field(False, description="Include treatment options")
-    drugs: Optional[bool] = Field(False, description="Include recommended drugs")
-    session_id: str = Field(default="default_session")
-
-
-class AdvancedSearchResponse(BaseModel):
-    """
-    Response for advanced medical search.
-    """
-    answer: str
-    topic_info: Optional[str] = None
-    symptoms_found: Optional[List[str]] = None
-    causes_info: Optional[str] = None
-    treatment_options: Optional[List[str]] = None
-    recommended_drugs: Optional[List[str]] = None
-    sources: List[str] = Field(default_factory=list)
-    session_id: Optional[str] = None
-
-    
+ 
