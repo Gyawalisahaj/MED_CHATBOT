@@ -11,9 +11,6 @@ from app.api.auth import router as auth_router
 from app.db.postgres_session import pg_engine, AuthBase  
 from app.models.users import User                    
 
-
-# app.include_router(auth_router, prefix="/api/v1/auth", tags=["Auth"])  
-
 logger = get_logger("main")
 
 
@@ -70,14 +67,15 @@ def create_app() -> FastAPI:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:3000"],
+        allow_origins=settings.CORS_ORIGINS,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
 
-    # Include the chat router
+    # Include routers
     app.include_router(chat_router, prefix="/api/v1/chat", tags=["Chat"])
+    app.include_router(auth_router, prefix="/api/v1/auth", tags=["Auth"])
 
     # Feature: Your specific root endpoint
     @app.get("/", tags=["Root"])
@@ -91,11 +89,7 @@ def create_app() -> FastAPI:
 
     return app
 
-# Initialize the application instance
-
 app = create_app()
-
-app.include_router(auth_router, prefix="/api/v1/auth", tags=["Auth"])  
 
 if __name__ == "__main__":
     import uvicorn
