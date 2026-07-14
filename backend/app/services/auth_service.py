@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from typing import Optional
+import re
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -215,6 +216,3 @@ def change_password(req: ChangePasswordRequest, current_user: User, db: Session)
     db.commit()
     logger.info(f"Password changed for user {current_user.id}")
     return {"message": "Password changed successfully."}
-
-
-import re   
