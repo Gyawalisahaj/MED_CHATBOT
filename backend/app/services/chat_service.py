@@ -16,13 +16,7 @@ try:
 except Exception:
     ChatGroq = None
 
-# Define a very small document-like object for use by the vector store cache.
-class SimpleDocument:
-    def __init__(self, page_content: str, metadata: Optional[Dict[str, Any]] = None):
-        self.page_content = page_content
-        self.metadata = metadata or {}
-
-# For type hints we can alias to the simple class
+from app.rag.vectorstore import SimpleDocument
 Document = SimpleDocument
 
 from app.rag.qa_cache import get_cached_answer, save_to_cache
