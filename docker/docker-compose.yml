@@ -19,16 +19,15 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.frontend
+      args:
+        - NEXT_PUBLIC_API_URL=http://localhost:8000
     container_name: medical_rag_frontend
     ports:
-      - "8501:8501"
+      - "3000:3000"
     depends_on:
       - backend
     environment:
-      - BACKEND_URL=http://backend:8000
-      - PYTHONUNBUFFERED=1
-    volumes:
-      - ../frontend:/app
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
     networks:
       - medical_network
 
