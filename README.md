@@ -15,6 +15,9 @@ Ask anything → it searches the books → answers with citations.
 ![Chat Response](screenshot/chat_response.png)
 *Answers with citations from books like Harrison's, Guyton, Kumar & Clark's*
 
+![Chat Source](screenshot/chat_source.png)
+![Chat Source](screenshot/chat_source2.png)
+*Main chat interface — type a medical question and get sourced answers*
 ---
 
 ## 🤔 What / Why / How
