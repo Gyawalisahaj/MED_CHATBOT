@@ -1,5 +1,6 @@
 # General
 .env
+.env.local
 __pycache__/
 *.pyc
 *.pyo
@@ -10,8 +11,9 @@ venv/
 # Backend
 backend/vector_store/
 *.db
+/package-lock.json
 data/raw_docs/*.pdf
-Document/*.pdf
+document/*.pdf
 
 # Frontend
 frontend/.next/
