@@ -3,14 +3,28 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 from app.core.config import settings
 
 
-# Separate engine pointing at PostgreSQL
-pg_engine = create_engine(
-    settings.POSTGRES_URL,
-    pool_pre_ping=True,      # automatically reconnect after idle timeouts
-    pool_size=10,            # keep 10 connections alive in the pool
-    max_overflow=20,         # allow 20 extra connections under burst load
-    echo=settings.DEBUG,     # log SQL in dev, silent in prod
-)
+def _create_auth_engine():
+    try:
+        engine = create_engine(
+            settings.POSTGRES_URL,
+            pool_pre_ping=True,
+            pool_size=10,
+            max_overflow=20,
+            echo=settings.DEBUG,
+        )
+        with engine.connect():
+            return engine
+    except Exception as exc:
+        fallback_url = settings.DATABASE_URL
+        print(f"PostgreSQL unavailable ({exc}). Using SQLite auth database: {fallback_url}")
+        return create_engine(
+            fallback_url,
+            connect_args={"check_same_thread": False},
+            echo=settings.DEBUG,
+        )
+
+
+pg_engine = _create_auth_engine()
 
 PGSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=pg_engine)
 
