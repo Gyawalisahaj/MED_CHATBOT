@@ -63,7 +63,7 @@ chatbot/
 ├── script/
 │   └── ingest_doc.py      # Load PDFs into vector store
 │
-├── Document/              # ← Put your medical PDFs here
+├── document/              # ← Put your medical PDFs here
 ├── backend/.env           # Backend config
 ├── frontend/.env          # Frontend config
 └── requirements.txt
@@ -89,7 +89,7 @@ POSTGRES_URL=postgresql+psycopg2://user:password@localhost:5432/medchatbot
 
 ### 3. Add Medical PDFs & Ingest
 
-Drop PDFs into the `Document/` folder, then run:
+Drop PDFs into the `document/` folder, then run:
 ```bash
 cd backend
 python -m venv venv
@@ -135,7 +135,7 @@ This starts the backend on port `8000` and the frontend on port `3000`.
 ## 🛠 Troubleshooting
 
 **Vector store index empty?**
-Ensure you have PDFs in the `Document` folder and have run the ingestion script. The app also attempts to auto-load documents on startup if the vector store is empty.
+Ensure you have PDFs in the `document` folder and have run the ingestion script. The app also attempts to auto-load documents on startup if the vector store is empty.
 
 **Cannot log in or register?**
 Check that your PostgreSQL database is running and the credentials match the `POSTGRES_URL` in `backend/.env`.
