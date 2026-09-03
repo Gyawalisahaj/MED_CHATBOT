@@ -59,7 +59,7 @@ class Settings(BaseSettings):
     CORS_ORIGINS: list = ["*"]
     
     # ==================== PDF INGESTION ====================
-    PDF_FOLDER: str = str(_ROOT_DIR / "Document")
+    PDF_FOLDER: str = str(_ROOT_DIR / "document")
     PDF_EXTENSIONS: list = [".pdf"]
     CHUNK_SIZE: int = 700
     CHUNK_OVERLAP: int = 120
